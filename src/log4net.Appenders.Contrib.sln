@@ -1,0 +1,28 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "log4net.Appenders.Contrib", "log4net.Appenders.Contrib\log4net.Appenders.Contrib.csproj", "{a6c45af7-a332-4d1d-b3c1-65e2716179a7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "log4net.Appenders.Contrib.UnitTests", "log4net.Appenders.Contrib.UnitTests\log4net.Appenders.Contrib.UnitTests.csproj", "{fd92f8a9-2f9b-49d7-9200-37a175b074c3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{a6c45af7-a332-4d1d-b3c1-65e2716179a7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{a6c45af7-a332-4d1d-b3c1-65e2716179a7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{a6c45af7-a332-4d1d-b3c1-65e2716179a7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{a6c45af7-a332-4d1d-b3c1-65e2716179a7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{fd92f8a9-2f9b-49d7-9200-37a175b074c3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{fd92f8a9-2f9b-49d7-9200-37a175b074c3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{fd92f8a9-2f9b-49d7-9200-37a175b074c3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{fd92f8a9-2f9b-49d7-9200-37a175b074c3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
