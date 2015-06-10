@@ -1,11 +1,15 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "log4net.Appenders.Contrib", "log4net.Appenders.Contrib\log4net.Appenders.Contrib.csproj", "{a6c45af7-a332-4d1d-b3c1-65e2716179a7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "log4net.Appenders.Contrib", "log4net.Appenders.Contrib\log4net.Appenders.Contrib.csproj", "{A6C45AF7-A332-4D1D-B3C1-65E2716179A7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "log4net.Appenders.Contrib.UnitTests", "log4net.Appenders.Contrib.UnitTests\log4net.Appenders.Contrib.UnitTests.csproj", "{fd92f8a9-2f9b-49d7-9200-37a175b074c3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "log4net.Appenders.Contrib.UnitTests", "log4net.Appenders.Contrib.UnitTests\log4net.Appenders.Contrib.UnitTests.csproj", "{FD92F8A9-2F9B-49D7-9200-37A175B074C3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{756C2EDD-681C-449E-9779-EF878FA2CFE7}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\packages.config = .nuget\packages.config
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +17,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{a6c45af7-a332-4d1d-b3c1-65e2716179a7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{a6c45af7-a332-4d1d-b3c1-65e2716179a7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{a6c45af7-a332-4d1d-b3c1-65e2716179a7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{a6c45af7-a332-4d1d-b3c1-65e2716179a7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{fd92f8a9-2f9b-49d7-9200-37a175b074c3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{fd92f8a9-2f9b-49d7-9200-37a175b074c3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{fd92f8a9-2f9b-49d7-9200-37a175b074c3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{fd92f8a9-2f9b-49d7-9200-37a175b074c3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6C45AF7-A332-4D1D-B3C1-65E2716179A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6C45AF7-A332-4D1D-B3C1-65E2716179A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6C45AF7-A332-4D1D-B3C1-65E2716179A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6C45AF7-A332-4D1D-B3C1-65E2716179A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD92F8A9-2F9B-49D7-9200-37A175B074C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD92F8A9-2F9B-49D7-9200-37A175B074C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD92F8A9-2F9B-49D7-9200-37A175B074C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD92F8A9-2F9B-49D7-9200-37A175B074C3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
