@@ -16,7 +16,7 @@ namespace log4net.Appenders.Contrib.UnitTests
 		{
 			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss+00:00");
 			var id = Guid.NewGuid().ToString();
-			var message = string.Format("94 <11>1 {0} {1} {2}", time, typeof(RemoteSyslog5424AppenderTest).FullName, id);
+			var message = string.Format("94 <11>1 {0} {1} {2} [App/0]", time, typeof(RemoteSyslog5424AppenderTest).Name, id);
 
 			var layout = new PatternLayout("%.255message%newline");
 			layout.ActivateOptions();
