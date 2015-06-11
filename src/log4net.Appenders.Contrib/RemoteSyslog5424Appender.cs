@@ -37,7 +37,7 @@ namespace log4net.Appenders.Contrib
 		protected override void Append(LoggingEvent loggingEvent)
 		{
 			var message = RenderLoggingEvent(loggingEvent);
-			_writer.WriteLine(message);
+			_writer.Write(message);
 			_writer.Flush();
 		}
 
