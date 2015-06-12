@@ -14,16 +14,17 @@ namespace log4net.Appenders.Contrib.UnitTests
 		[Test]
 		public static void TestSimpleAppending()
 		{
-			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss+00:00");
-			var id = Guid.NewGuid().ToString();
-			var message = string.Format("94 <11>1 {0} {1} {2} [App/0]", time, typeof(RemoteSyslog5424AppenderTest).Name, id);
+			var message = Guid.NewGuid().ToString();
 
 			var layout = new PatternLayout("%.255message%newline");
 			layout.ActivateOptions();
 
-			using (var appender = new RemoteSyslog5424Appender(
-				TestSettings.Server, TestSettings.Port, TestSettings.CertificatePath) { Layout = layout })
+			using (var appender = new RemoteSyslog5424Appender(TestSettings.Server, TestSettings.Port, TestSettings.CertificatePath))
 			{
+				appender.Layout = layout;
+				appender.Priority = 11;
+				appender.AppName = typeof(RemoteSyslog5424AppenderTest).Name;
+
 				BasicConfigurator.Configure(appender);
 				var log = LogManager.GetLogger(typeof(RemoteSyslog5424AppenderTest));
 
