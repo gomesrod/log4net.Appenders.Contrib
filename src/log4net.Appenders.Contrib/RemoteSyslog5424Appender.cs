@@ -181,6 +181,6 @@ namespace log4net.Appenders.Contrib
 		private TextWriter _writer;
 
 		private volatile bool _disposed;
-		private object _initSync = new object();
+		private readonly object _initSync = new object();
 	}
 }
