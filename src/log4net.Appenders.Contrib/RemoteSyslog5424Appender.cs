@@ -165,6 +165,11 @@ namespace log4net.Appenders.Contrib
 			_disposed = true;
 		}
 
+		protected override void OnClose()
+		{
+			Dispose();
+		}
+
 		private Socket _socket;
 		private SslStream _stream;
 		private TextWriter _writer;

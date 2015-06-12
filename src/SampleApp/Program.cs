@@ -18,6 +18,8 @@ namespace log4net.Appenders.Contrib.SampleApp
 				var message = Guid.NewGuid().ToString();
 				var log = LogManager.GetLogger(typeof (Program));
 				log.Info(message);
+
+				log.Logger.Repository.Shutdown();
 			}
 			catch (Exception exc)
 			{
