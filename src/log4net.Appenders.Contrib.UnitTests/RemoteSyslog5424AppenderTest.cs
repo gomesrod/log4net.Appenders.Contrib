@@ -22,7 +22,6 @@ namespace log4net.Appenders.Contrib.UnitTests
 			using (var appender = new RemoteSyslog5424Appender(TestSettings.Server, TestSettings.Port, TestSettings.CertificatePath))
 			{
 				appender.Layout = layout;
-				appender.Priority = 11;
 				appender.AppName = typeof(RemoteSyslog5424AppenderTest).Name;
 
 				BasicConfigurator.Configure(appender);

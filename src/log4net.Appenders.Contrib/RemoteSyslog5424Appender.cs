@@ -11,6 +11,8 @@ using System.Text;
 
 using log4net.Appender;
 using log4net.Core;
+using SyslogFacility = log4net.Appender.RemoteSyslogAppender.SyslogFacility;
+using SyslogSeverity = log4net.Appender.RemoteSyslogAppender.SyslogSeverity;
 
 namespace log4net.Appenders.Contrib
 {
@@ -20,6 +22,7 @@ namespace log4net.Appenders.Contrib
 		{
 			Hostname = Dns.GetHostName();
 			Version = 0;
+			Facility = SyslogFacility.User;
 
 			_socket = new Socket(SocketType.Stream, ProtocolType.IP);
 			_socket.Connect(server, port);
@@ -38,7 +41,7 @@ namespace log4net.Appenders.Contrib
 		{
 		}
 
-		public int Priority { get; set; }
+		public SyslogFacility Facility { get; set; }
 		public int Version { get; set; }
 
 		public string Hostname
@@ -79,7 +82,7 @@ namespace log4net.Appenders.Contrib
 
 			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss+00:00");
 			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}",
-				Priority, Version, time, Hostname, AppName, ProcId, MessageId, sourceMessage);
+				GeneratePriority(loggingEvent.Level), Version, time, Hostname, AppName, ProcId, MessageId, sourceMessage);
 			_writer.Write(message);
 			_writer.Flush();
 		}
@@ -87,6 +90,35 @@ namespace log4net.Appenders.Contrib
 		private static bool VerifyServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
 		{
 			return true;
+		}
+
+		// Priority generation in RFC 5424 seems to be the same as in RFC 3164
+		int GeneratePriority(Level level)
+		{
+			return RemoteSyslogAppender.GeneratePriority(Facility, GetSeverity(level));
+		}
+
+		public static SyslogSeverity GetSeverity(Level level)
+		{
+			if (level >= Level.Alert)
+				return SyslogSeverity.Alert;
+
+			if (level >= Level.Critical)
+				return SyslogSeverity.Critical;
+
+			if (level >= Level.Error)
+				return SyslogSeverity.Error;
+
+			if (level >= Level.Warn)
+				return SyslogSeverity.Warning;
+
+			if (level >= Level.Notice)
+				return SyslogSeverity.Notice;
+
+			if (level >= Level.Info)
+				return SyslogSeverity.Informational;
+
+			return SyslogSeverity.Debug;
 		}
 
 		public void Dispose()
