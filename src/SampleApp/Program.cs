@@ -16,10 +16,8 @@ namespace log4net.Appenders.Contrib.SampleApp
 				XmlConfigurator.Configure();
 
 				var message = Guid.NewGuid().ToString();
-				var log = LogManager.GetLogger(typeof (Program));
+				var log = LogManager.GetLogger(typeof(Program));
 				log.Info(message);
-
-				log.Logger.Repository.Shutdown();
 			}
 			catch (Exception exc)
 			{
