@@ -18,28 +18,45 @@ namespace log4net.Appenders.Contrib
 {
 	public class RemoteSyslog5424Appender : AppenderSkeleton, IDisposable
 	{
-		public RemoteSyslog5424Appender(string server, int port, X509Certificate certificate)
+		public RemoteSyslog5424Appender()
 		{
+		}
+
+		public RemoteSyslog5424Appender(string server, int port, string certificatePath)
+		{
+			Server = server;
+			Port = port;
+			CertificatePath = certificatePath;
+		}
+
+		private void EnsureInit()
+		{
+			if (_disposed)
+				throw new ObjectDisposedException(GetType().FullName);
+
+			if (_socket != null)
+				return;
+
 			Hostname = Dns.GetHostName();
 			Version = 0;
 			Facility = SyslogFacility.User;
 
 			_socket = new Socket(SocketType.Stream, ProtocolType.IP);
-			_socket.Connect(server, port);
+			_socket.Connect(Server, Port);
 
 			var rawStream = new NetworkStream(_socket);
 
 			_stream = new SslStream(rawStream, false, VerifyServerCertificate);
+			var certificate = new X509Certificate(CertificatePath);
 			var certificates = new X509CertificateCollection(new[] { certificate });
-			_stream.AuthenticateAsClient(server, certificates, SslProtocols.Tls, false);
+			_stream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
 
 			_writer = new StreamWriter(_stream, Encoding.UTF8);
 		}
 
-		public RemoteSyslog5424Appender(string host, int port, string certificatePath)
-			: this(host, port, new X509Certificate(certificatePath))
-		{
-		}
+		public string Server { get; set; }
+		public int Port { get; set; }
+		public string CertificatePath { get; set; }
 
 		public SyslogFacility Facility { get; set; }
 		public int Version { get; set; }
@@ -78,6 +95,8 @@ namespace log4net.Appenders.Contrib
 
 		protected override void Append(LoggingEvent loggingEvent)
 		{
+			EnsureInit();
+
 			var sourceMessage = RenderLoggingEvent(loggingEvent);
 
 			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
@@ -142,10 +161,14 @@ namespace log4net.Appenders.Contrib
 				_socket.Dispose();
 				_socket = null;
 			}
+
+			_disposed = true;
 		}
 
 		private Socket _socket;
 		private SslStream _stream;
 		private TextWriter _writer;
+
+		private volatile bool _disposed;
 	}
 }
