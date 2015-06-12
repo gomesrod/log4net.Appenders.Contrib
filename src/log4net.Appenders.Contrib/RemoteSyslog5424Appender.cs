@@ -19,7 +19,7 @@ namespace log4net.Appenders.Contrib
 		public RemoteSyslog5424Appender(string server, int port, X509Certificate certificate)
 		{
 			Hostname = Dns.GetHostName();
-			Version = 1;
+			Version = 0;
 
 			_socket = new Socket(SocketType.Stream, ProtocolType.IP);
 			_socket.Connect(server, port);
