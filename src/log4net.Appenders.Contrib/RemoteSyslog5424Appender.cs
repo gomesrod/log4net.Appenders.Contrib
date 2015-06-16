@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -165,7 +166,14 @@ namespace log4net.Appenders.Contrib
 
 				if (_socket != null)
 				{
-					_socket.Disconnect(false);
+					try
+					{
+						_socket.Disconnect(false);
+					}
+					catch (SocketException exc)
+					{
+						Trace.WriteLine(exc);
+					}
 					_socket.Dispose();
 					_socket = null;
 				}
