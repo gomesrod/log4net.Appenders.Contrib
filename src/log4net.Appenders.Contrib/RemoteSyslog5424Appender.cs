@@ -49,8 +49,10 @@ namespace log4net.Appenders.Contrib
 				var rawStream = new NetworkStream(_socket);
 
 				_stream = new SslStream(rawStream, false, VerifyServerCertificate);
-				var certificate = new X509Certificate(CertificatePath);
-				var certificates = new X509CertificateCollection(new[] {certificate});
+				var certificate = (string.IsNullOrEmpty(CertificatePath))
+					? new X509Certificate(Encoding.ASCII.GetBytes(Certificate.Trim()))
+					: new X509Certificate(CertificatePath);
+				var certificates = new X509CertificateCollection(new[] { certificate });
 				_stream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
 
 				_writer = new StreamWriter(_stream, Encoding.UTF8);
@@ -60,6 +62,7 @@ namespace log4net.Appenders.Contrib
 		public string Server { get; set; }
 		public int Port { get; set; }
 		public string CertificatePath { get; set; }
+		public string Certificate { get; set; }
 
 		public SyslogFacility Facility { get; set; }
 		public int Version { get; set; }
