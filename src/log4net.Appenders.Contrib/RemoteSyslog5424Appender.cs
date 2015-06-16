@@ -40,7 +40,7 @@ namespace log4net.Appenders.Contrib
 			lock (_initSync)
 			{
 				Hostname = Dns.GetHostName();
-				Version = 0;
+				Version = 1;
 				Facility = SyslogFacility.User;
 
 				_socket = new Socket(SocketType.Stream, ProtocolType.IP);
@@ -65,7 +65,7 @@ namespace log4net.Appenders.Contrib
 		public string Certificate { get; set; }
 
 		public SyslogFacility Facility { get; set; }
-		public int Version { get; set; }
+		public int Version { get; private set; }
 
 		public string Hostname
 		{
