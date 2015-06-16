@@ -15,9 +15,12 @@ namespace log4net.Appenders.Contrib.SampleApp
 			{
 				XmlConfigurator.Configure();
 
-				var message = Guid.NewGuid().ToString();
-				var log = LogManager.GetLogger(typeof(Program));
-				log.Info(message);
+				for (var i = 0; i < 3; i++)
+				{
+					var message = i + "_" + Guid.NewGuid();
+					var log = LogManager.GetLogger(typeof (Program));
+					log.Info(message);
+				}
 			}
 			catch (Exception exc)
 			{

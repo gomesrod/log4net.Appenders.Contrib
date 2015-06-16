@@ -14,8 +14,6 @@ namespace log4net.Appenders.Contrib.UnitTests
 		[Test]
 		public static void TestSimpleAppending()
 		{
-			var message = Guid.NewGuid().ToString();
-
 			var layout = new PatternLayout("%.255message");
 			layout.ActivateOptions();
 
@@ -27,7 +25,11 @@ namespace log4net.Appenders.Contrib.UnitTests
 				BasicConfigurator.Configure(appender);
 				var log = LogManager.GetLogger(typeof(RemoteSyslog5424AppenderTest));
 
-				log.Info(message);
+				for (var i = 0; i < 3; i++)
+				{
+					var message = i + "_" + Guid.NewGuid();
+					log.Info(message);
+				}
 			}
 		}
 	}
