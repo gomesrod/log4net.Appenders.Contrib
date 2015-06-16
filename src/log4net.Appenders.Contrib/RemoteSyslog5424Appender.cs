@@ -147,7 +147,7 @@ namespace log4net.Appenders.Contrib
 			return SyslogSeverity.Debug;
 		}
 
-		public void Dispose()
+		void Disconnect()
 		{
 			lock (_initSync)
 			{
@@ -177,7 +177,14 @@ namespace log4net.Appenders.Contrib
 					_socket.Dispose();
 					_socket = null;
 				}
+			}
+		}
 
+		public void Dispose()
+		{
+			lock (_initSync)
+			{
+				Disconnect();
 				_disposed = true;
 			}
 		}
