@@ -102,15 +102,23 @@ namespace log4net.Appenders.Contrib
 
 		protected override void Append(LoggingEvent loggingEvent)
 		{
-			EnsureInit();
+			try
+			{
+				EnsureInit();
 
-			var sourceMessage = RenderLoggingEvent(loggingEvent);
+				var sourceMessage = RenderLoggingEvent(loggingEvent);
 
-			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
-			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}",
-				GeneratePriority(loggingEvent.Level), Version, time, Hostname, AppName, ProcId, MessageId, sourceMessage);
-			_writer.Write(message);
-			_writer.Flush();
+				var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
+				var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}",
+					GeneratePriority(loggingEvent.Level), Version, time, Hostname, AppName, ProcId, MessageId, sourceMessage);
+				_writer.Write(message);
+
+				_writer.Flush();
+			}
+			catch (Exception exc)
+			{
+				Trace.WriteLine(exc);
+			}
 		}
 
 		private static bool VerifyServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
