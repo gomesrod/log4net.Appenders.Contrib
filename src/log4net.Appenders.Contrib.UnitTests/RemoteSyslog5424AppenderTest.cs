@@ -16,7 +16,7 @@ namespace log4net.Appenders.Contrib.UnitTests
 		{
 			var message = Guid.NewGuid().ToString();
 
-			var layout = new PatternLayout("%.255message%newline");
+			var layout = new PatternLayout("%.255message");
 			layout.ActivateOptions();
 
 			using (var appender = new RemoteSyslog5424Appender(TestSettings.Server, TestSettings.Port, TestSettings.CertificatePath))
