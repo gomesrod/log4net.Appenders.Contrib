@@ -30,7 +30,7 @@ namespace log4net.Appenders.Contrib
 			CertificatePath = certificatePath;
 		}
 
-		private void EnsureInit()
+		private void EnsureConnected()
 		{
 			if (_disposed)
 				throw new ObjectDisposedException(GetType().FullName);
@@ -104,7 +104,7 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
-				EnsureInit();
+				EnsureConnected();
 
 				var sourceMessage = RenderLoggingEvent(loggingEvent);
 
