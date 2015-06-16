@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -117,7 +116,7 @@ namespace log4net.Appenders.Contrib
 			}
 			catch (Exception exc)
 			{
-				Trace.WriteLine(exc);
+				_log.Error(exc);
 			}
 		}
 
@@ -176,12 +175,14 @@ namespace log4net.Appenders.Contrib
 				{
 					try
 					{
-						_socket.Disconnect(false);
+						if (_socket.Connected)
+							_socket.Disconnect(false);
 					}
-					catch (SocketException exc)
+					catch (Exception exc)
 					{
-						Trace.WriteLine(exc);
+						_log.Error(exc);
 					}
+
 					_socket.Dispose();
 					_socket = null;
 				}
@@ -208,5 +209,7 @@ namespace log4net.Appenders.Contrib
 
 		private volatile bool _disposed;
 		private readonly object _initSync = new object();
+
+		private readonly ILog _log = LogManager.GetLogger("RemoteSyslog5424AppenderDiagLogger");
 	}
 }
