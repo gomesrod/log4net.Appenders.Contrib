@@ -124,3 +124,5 @@ _NCrunch_*
 
 # Xamarin studio specific
 *.userprefs
+
+/_bin/
