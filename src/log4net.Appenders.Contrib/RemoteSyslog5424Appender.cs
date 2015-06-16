@@ -20,9 +20,13 @@ namespace log4net.Appenders.Contrib
 	{
 		public RemoteSyslog5424Appender()
 		{
+			Hostname = Dns.GetHostName();
+			Version = 1;
+			Facility = SyslogFacility.User;
 		}
 
 		public RemoteSyslog5424Appender(string server, int port, string certificatePath)
+			: this()
 		{
 			Server = server;
 			Port = port;
@@ -39,10 +43,6 @@ namespace log4net.Appenders.Contrib
 
 			lock (_initSync)
 			{
-				Hostname = Dns.GetHostName();
-				Version = 1;
-				Facility = SyslogFacility.User;
-
 				_socket = new Socket(SocketType.Stream, ProtocolType.IP);
 				_socket.Connect(Server, Port);
 
