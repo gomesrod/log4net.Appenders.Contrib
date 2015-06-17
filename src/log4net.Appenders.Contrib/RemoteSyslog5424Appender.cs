@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 
 using log4net.Appender;
 using log4net.Core;
@@ -50,6 +51,7 @@ namespace log4net.Appenders.Contrib
 		public int Version { get; private set; }
 
 		public char? TrailerChar { get; set; }
+
 		public string Hostname
 		{
 			get { return _hostname ?? "-"; }
@@ -86,8 +88,6 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
-				EnsureConnected();
-
 				var sourceMessage = RenderLoggingEvent(loggingEvent);
 
 				var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
@@ -96,9 +96,32 @@ namespace log4net.Appenders.Contrib
 				if (TrailerChar != null)
 					message += TrailerChar;
 				var frame = string.Format("{0} {1}", message.Length, message);
-				_writer.Write(frame);
 
-				_writer.Flush();
+				while (true)
+				{
+					try
+					{
+						EnsureConnected();
+
+						_writer.Write(frame);
+						_writer.Flush();
+
+						break;
+					}
+					catch (SocketException exc)
+					{
+						if (exc.SocketErrorCode != SocketError.TimedOut)
+							_log.Error(exc);
+					}
+					catch (IOException exc)
+					{
+						if (exc.HResult != 0x80131620) // COR_E_IO
+							_log.Error(exc);
+					}
+
+					Disconnect();
+					Thread.Sleep(TimeSpan.FromSeconds(1));
+				}
 			}
 			catch (Exception exc)
 			{
@@ -187,7 +210,7 @@ namespace log4net.Appenders.Contrib
 					try
 					{
 						if (_socket.Connected)
-							_socket.Disconnect(false);
+							_socket.Disconnect(true);
 					}
 					catch (Exception exc)
 					{
