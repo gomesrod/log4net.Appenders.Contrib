@@ -41,32 +41,6 @@ namespace log4net.Appenders.Contrib
 			CertificatePath = certificatePath;
 		}
 
-		private void EnsureConnected()
-		{
-			if (_disposed)
-				throw new ObjectDisposedException(GetType().FullName);
-
-			if (_socket != null)
-				return;
-
-			lock (_initSync)
-			{
-				_socket = new Socket(SocketType.Stream, ProtocolType.IP);
-				_socket.Connect(Server, Port);
-
-				var rawStream = new NetworkStream(_socket);
-
-				_stream = new SslStream(rawStream, false, VerifyServerCertificate);
-				var certificate = (string.IsNullOrEmpty(CertificatePath))
-					? new X509Certificate(Encoding.ASCII.GetBytes(Certificate.Trim()))
-					: new X509Certificate(CertificatePath);
-				var certificates = new X509CertificateCollection(new[] { certificate });
-				_stream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
-
-				_writer = new StreamWriter(_stream, Encoding.UTF8);
-			}
-		}
-
 		public string Server { get; set; }
 		public int Port { get; set; }
 		public string CertificatePath { get; set; }
@@ -164,6 +138,32 @@ namespace log4net.Appenders.Contrib
 				return SyslogSeverity.Informational;
 
 			return SyslogSeverity.Debug;
+		}
+
+		private void EnsureConnected()
+		{
+			if (_disposed)
+				throw new ObjectDisposedException(GetType().FullName);
+
+			if (_socket != null)
+				return;
+
+			lock (_initSync)
+			{
+				_socket = new Socket(SocketType.Stream, ProtocolType.IP);
+				_socket.Connect(Server, Port);
+
+				var rawStream = new NetworkStream(_socket);
+
+				_stream = new SslStream(rawStream, false, VerifyServerCertificate);
+				var certificate = (string.IsNullOrEmpty(CertificatePath))
+					? new X509Certificate(Encoding.ASCII.GetBytes(Certificate.Trim()))
+					: new X509Certificate(CertificatePath);
+				var certificates = new X509CertificateCollection(new[] { certificate });
+				_stream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
+
+				_writer = new StreamWriter(_stream, Encoding.UTF8);
+			}
 		}
 
 		void Disconnect()
