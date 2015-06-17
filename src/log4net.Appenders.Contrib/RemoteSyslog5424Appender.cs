@@ -16,6 +16,13 @@ using SyslogSeverity = log4net.Appender.RemoteSyslogAppender.SyslogSeverity;
 
 namespace log4net.Appenders.Contrib
 {
+	/// <summary>
+	/// Transfer logs using syslog protocol over TLS
+	/// related RFCs:
+	/// https://tools.ietf.org/html/rfc5424
+	/// https://tools.ietf.org/html/rfc5425
+	/// https://tools.ietf.org/html/rfc6587
+	/// </summary>
 	public class RemoteSyslog5424Appender : AppenderSkeleton, IDisposable
 	{
 		public RemoteSyslog5424Appender()
