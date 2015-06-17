@@ -110,7 +110,8 @@ namespace log4net.Appenders.Contrib
 				var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
 				var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}\r\n",
 					GeneratePriority(loggingEvent.Level), Version, time, Hostname, AppName, ProcId, MessageId, sourceMessage);
-				_writer.Write(message);
+				var frame = string.Format("{0} {1}", message.Length, message);
+				_writer.Write(frame);
 
 				_writer.Flush();
 			}
