@@ -30,6 +30,7 @@ namespace log4net.Appenders.Contrib
 			Hostname = Dns.GetHostName();
 			Version = 1;
 			Facility = SyslogFacility.User;
+			TrailerChar = '\n';
 		}
 
 		public RemoteSyslog5424Appender(string server, int port, string certificatePath)
@@ -74,6 +75,7 @@ namespace log4net.Appenders.Contrib
 		public SyslogFacility Facility { get; set; }
 		public int Version { get; private set; }
 
+		public char? TrailerChar { get; set; }
 		public string Hostname
 		{
 			get { return _hostname ?? "-"; }
@@ -115,8 +117,10 @@ namespace log4net.Appenders.Contrib
 				var sourceMessage = RenderLoggingEvent(loggingEvent);
 
 				var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
-				var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}\r\n",
+				var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}",
 					GeneratePriority(loggingEvent.Level), Version, time, Hostname, AppName, ProcId, MessageId, sourceMessage);
+				if (TrailerChar != null)
+					message += TrailerChar;
 				var frame = string.Format("{0} {1}", message.Length, message);
 				_writer.Write(frame);
 
