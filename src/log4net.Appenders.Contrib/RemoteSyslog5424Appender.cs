@@ -172,7 +172,6 @@ namespace log4net.Appenders.Contrib
 			{
 				if (_writer != null)
 				{
-					_writer.Flush();
 					_writer.Dispose();
 					_writer = null;
 				}
