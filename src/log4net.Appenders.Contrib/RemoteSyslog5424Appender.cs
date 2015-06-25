@@ -129,11 +129,6 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
-		private static bool VerifyServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-		{
-			return true;
-		}
-
 		// Priority generation in RFC 5424 seems to be the same as in RFC 3164
 		int GeneratePriority(Level level)
 		{
@@ -187,6 +182,11 @@ namespace log4net.Appenders.Contrib
 
 				_writer = new StreamWriter(_stream, Encoding.UTF8);
 			}
+		}
+
+		private static bool VerifyServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+		{
+			return true;
 		}
 
 		void Disconnect()
