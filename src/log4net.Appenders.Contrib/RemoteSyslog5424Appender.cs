@@ -168,11 +168,11 @@ namespace log4net.Appenders.Contrib
 			if (_disposed)
 				throw new ObjectDisposedException(GetType().FullName);
 
-			if (_socket != null)
-				return;
-
 			lock (_initSync)
 			{
+				if (_socket != null)
+					return;
+
 				_socket = new Socket(SocketType.Stream, ProtocolType.IP);
 				_socket.Connect(Server, Port);
 
