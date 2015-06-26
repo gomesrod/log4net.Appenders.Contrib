@@ -143,20 +143,18 @@ namespace log4net.Appenders.Contrib
 			return SyslogSeverity.Debug;
 		}
 
-		private bool EnsureConnected()
+		private void EnsureConnected()
 		{
 			if (_disposed)
 				throw new ObjectDisposedException(GetType().FullName);
 
 			lock (_initSync)
 			{
-				if (_socket == null)
-					_socket = new Socket(SocketType.Stream, ProtocolType.IP);
-				if (!_socket.Connected)
-					_socket.Connect(Server, Port);
+				if (_socket != null)
+					return;
 
-				if (_stream != null)
-					return true;
+				_socket = new Socket(SocketType.Stream, ProtocolType.IP);
+				_socket.Connect(Server, Port);
 
 				var rawStream = new NetworkStream(_socket);
 
@@ -168,8 +166,6 @@ namespace log4net.Appenders.Contrib
 				_stream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
 
 				_writer = new StreamWriter(_stream, Encoding.UTF8);
-
-				return true;
 			}
 		}
 
@@ -206,21 +202,36 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
-				if (!EnsureConnected())
-					return;
-
-				while (true)
+				try
 				{
-					string frame;
-					if (!_messageQueue.TryPeek(out frame))
-						break;
+					EnsureConnected();
 
-					_writer.Write(frame);
+					while (true)
+					{
+						string frame;
+						if (!_messageQueue.TryPeek(out frame))
+							break;
 
-					_messageQueue.TryDequeue(out frame);
+						_writer.Write(frame);
+						_writer.Flush();
+
+						_messageQueue.TryDequeue(out frame);
+					}
+
+					return;
+				}
+				catch (SocketException exc)
+				{
+					if (exc.SocketErrorCode != SocketError.TimedOut)
+						_log.Error(exc);
+				}
+				catch (IOException exc)
+				{
+					if (exc.HResult != 0x80131620) // COR_E_IO
+						_log.Error(exc);
 				}
 
-				_writer.Flush();
+				Disconnect();
 			}
 			catch (ThreadInterruptedException)
 			{
@@ -230,16 +241,6 @@ namespace log4net.Appenders.Contrib
 			}
 			catch (ObjectDisposedException)
 			{
-			}
-			catch (SocketException exc)
-			{
-				if (exc.SocketErrorCode != SocketError.TimedOut)
-					_log.Error(exc);
-			}
-			catch (IOException exc)
-			{
-				if (exc.HResult != 0x80131620) // COR_E_IO
-					_log.Error(exc);
 			}
 			catch (Exception exc)
 			{
