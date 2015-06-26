@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -254,7 +255,14 @@ namespace log4net.Appenders.Contrib
 			{
 				if (_writer != null)
 				{
-					_writer.Dispose();
+					try
+					{
+						_writer.Dispose();
+					}
+					catch (Exception exc)
+					{
+						Trace.WriteLine(exc);
+					}
 					_writer = null;
 				}
 
