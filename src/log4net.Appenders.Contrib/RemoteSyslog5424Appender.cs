@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -32,6 +33,8 @@ namespace log4net.Appenders.Contrib
 			Version = 1;
 			Facility = SyslogFacility.User;
 			TrailerChar = '\n';
+
+			_senderThread = new Thread(SenderThreadEntry) { Name = "SenderThread" };
 		}
 
 		public RemoteSyslog5424Appender(string server, int port, string certificatePath)
@@ -84,6 +87,12 @@ namespace log4net.Appenders.Contrib
 
 		private string _messageId;
 
+		public override void ActivateOptions()
+		{
+			base.ActivateOptions();
+			_senderThread.Start();
+		}
+
 		protected override void Append(LoggingEvent loggingEvent)
 		{
 			try
@@ -97,31 +106,7 @@ namespace log4net.Appenders.Contrib
 					message += TrailerChar;
 				var frame = string.Format("{0} {1}", message.Length, message);
 
-				while (true)
-				{
-					try
-					{
-						EnsureConnected();
-
-						_writer.Write(frame);
-						_writer.Flush();
-
-						break;
-					}
-					catch (SocketException exc)
-					{
-						if (exc.SocketErrorCode != SocketError.TimedOut)
-							_log.Error(exc);
-					}
-					catch (IOException exc)
-					{
-						if (exc.HResult != 0x80131620) // COR_E_IO
-							_log.Error(exc);
-					}
-
-					Disconnect();
-					Thread.Sleep(TimeSpan.FromSeconds(1));
-				}
+				_messageQueue.Enqueue(frame);
 			}
 			catch (Exception exc)
 			{
@@ -158,18 +143,20 @@ namespace log4net.Appenders.Contrib
 			return SyslogSeverity.Debug;
 		}
 
-		private void EnsureConnected()
+		private bool EnsureConnected()
 		{
 			if (_disposed)
 				throw new ObjectDisposedException(GetType().FullName);
 
 			lock (_initSync)
 			{
-				if (_socket != null)
-					return;
+				if (_socket == null)
+					_socket = new Socket(SocketType.Stream, ProtocolType.IP);
+				if (!_socket.Connected)
+					_socket.Connect(Server, Port);
 
-				_socket = new Socket(SocketType.Stream, ProtocolType.IP);
-				_socket.Connect(Server, Port);
+				if (_stream != null)
+					return true;
 
 				var rawStream = new NetworkStream(_socket);
 
@@ -181,12 +168,80 @@ namespace log4net.Appenders.Contrib
 				_stream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
 
 				_writer = new StreamWriter(_stream, Encoding.UTF8);
+
+				return true;
 			}
 		}
 
 		private static bool VerifyServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
 		{
 			return true;
+		}
+
+		private void SenderThreadEntry()
+		{
+			try
+			{
+				while (!_disposed)
+				{
+					var startTime = DateTime.UtcNow;
+					while (DateTime.UtcNow - startTime < _sendingPeriod && !_closing)
+						Thread.Sleep(10);
+
+					SendMessages();
+					if (_closing)
+						break;
+				}
+			}
+			catch (ThreadInterruptedException)
+			{
+			}
+			catch (Exception exc)
+			{
+				_log.Error(exc);
+			}
+		}
+
+		private void SendMessages()
+		{
+			try
+			{
+				if (!EnsureConnected())
+					return;
+
+				while (true)
+				{
+					string frame;
+					if (!_messageQueue.TryPeek(out frame))
+						break;
+
+					_writer.Write(frame);
+
+					_messageQueue.TryDequeue(out frame);
+				}
+
+				_writer.Flush();
+			}
+			catch (ThreadInterruptedException)
+			{
+			}
+			catch (ThreadAbortException)
+			{
+			}
+			catch (SocketException exc)
+			{
+				if (exc.SocketErrorCode != SocketError.TimedOut)
+					_log.Error(exc);
+			}
+			catch (IOException exc)
+			{
+				if (exc.HResult != 0x80131620) // COR_E_IO
+					_log.Error(exc);
+			}
+			catch (Exception exc)
+			{
+				_log.Error(exc);
+			}
 		}
 
 		void Disconnect()
@@ -225,10 +280,30 @@ namespace log4net.Appenders.Contrib
 
 		public void Dispose()
 		{
-			lock (_initSync)
+			try
+			{
+				_closing = true;
+				_senderThread.Join(TimeSpan.FromSeconds(10)); // give the sender thread some time to flush the messages
+
+				_senderThread.Interrupt();
+				_senderThread.Join(TimeSpan.FromSeconds(5));
+
+				_senderThread.Abort();
+
+				_disposed = true;
+			}
+			catch (Exception exc)
+			{
+				_log.Error(exc);
+			}
+
+			try
 			{
 				Disconnect();
-				_disposed = true;
+			}
+			catch (Exception exc)
+			{
+				_log.Error(exc);
 			}
 		}
 
@@ -242,8 +317,13 @@ namespace log4net.Appenders.Contrib
 		private TextWriter _writer;
 
 		private volatile bool _disposed;
+		private volatile bool _closing;
 		private readonly object _initSync = new object();
 
 		private readonly ILog _log = LogManager.GetLogger("RemoteSyslog5424AppenderDiagLogger");
+
+		readonly ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
+		private readonly Thread _senderThread;
+		private readonly TimeSpan _sendingPeriod = TimeSpan.FromSeconds(5);
 	}
 }
