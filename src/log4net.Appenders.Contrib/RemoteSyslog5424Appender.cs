@@ -188,7 +188,7 @@ namespace log4net.Appenders.Contrib
 					while (DateTime.UtcNow - startTime < _sendingPeriod && !_closing)
 						Thread.Sleep(10);
 
-					SendMessages();
+					TrySendMessages();
 					if (_closing)
 						break;
 				}
@@ -202,7 +202,7 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
-		private void SendMessages()
+		private void TrySendMessages()
 		{
 			try
 			{
@@ -226,6 +226,9 @@ namespace log4net.Appenders.Contrib
 			{
 			}
 			catch (ThreadAbortException)
+			{
+			}
+			catch (ObjectDisposedException)
 			{
 			}
 			catch (SocketException exc)
