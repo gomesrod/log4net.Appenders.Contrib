@@ -15,10 +15,10 @@ namespace log4net.Appenders.Contrib.SampleApp
 			{
 				XmlConfigurator.Configure();
 
+				var log = LogManager.GetLogger(typeof(Program));
 				for (var i = 0; i < 3; i++)
 				{
 					var message = i + "_" + Guid.NewGuid();
-					var log = LogManager.GetLogger(typeof (Program));
 					log.Info(message);
 				}
 			}
