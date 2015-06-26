@@ -16,6 +16,10 @@ namespace log4net.Appenders.Contrib.SampleApp
 				XmlConfigurator.Configure();
 
 				var log = LogManager.GetLogger(typeof(Program));
+
+				AppDomain.CurrentDomain.UnhandledException +=
+					(sender, eventArgs) => Console.WriteLine(eventArgs.ExceptionObject.ToString());
+
 				for (var i = 0; i < 3; i++)
 				{
 					var message = i + "_" + Guid.NewGuid();
