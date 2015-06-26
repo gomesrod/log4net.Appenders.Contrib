@@ -25,6 +25,8 @@ namespace log4net.Appenders.Contrib.SampleApp
 					var message = i + "_" + Guid.NewGuid();
 					log.Info(message);
 				}
+
+				log.Logger.Repository.Shutdown();
 			}
 			catch (Exception exc)
 			{
