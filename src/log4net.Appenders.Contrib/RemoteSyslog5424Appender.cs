@@ -310,6 +310,7 @@ namespace log4net.Appenders.Contrib
 		protected override void OnClose()
 		{
 			Dispose();
+			base.OnClose();
 		}
 
 		private Socket _socket;
