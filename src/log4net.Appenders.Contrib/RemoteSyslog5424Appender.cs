@@ -227,7 +227,7 @@ namespace log4net.Appenders.Contrib
 				}
 				catch (IOException exc)
 				{
-					if (exc.HResult != 0x80131620) // COR_E_IO
+					if ((uint)exc.HResult != 0x80131620) // COR_E_IO
 						_log.Error(exc);
 				}
 
