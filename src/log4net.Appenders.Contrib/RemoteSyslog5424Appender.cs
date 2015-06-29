@@ -111,7 +111,7 @@ namespace log4net.Appenders.Contrib
 			}
 			catch (Exception exc)
 			{
-				_log.Error(exc);
+				LogError(exc);
 			}
 		}
 
@@ -195,7 +195,7 @@ namespace log4net.Appenders.Contrib
 			}
 			catch (Exception exc)
 			{
-				_log.Error(exc);
+				LogError(exc);
 			}
 		}
 
@@ -224,12 +224,12 @@ namespace log4net.Appenders.Contrib
 				catch (SocketException exc)
 				{
 					if (exc.SocketErrorCode != SocketError.TimedOut)
-						_log.Error(exc);
+						LogError(exc);
 				}
 				catch (IOException exc)
 				{
 					if ((uint)exc.HResult != 0x80131620) // COR_E_IO
-						_log.Error(exc);
+						LogError(exc);
 				}
 
 				Disconnect();
@@ -245,7 +245,7 @@ namespace log4net.Appenders.Contrib
 			}
 			catch (Exception exc)
 			{
-				_log.Error(exc);
+				LogError(exc);
 			}
 		}
 
@@ -261,7 +261,7 @@ namespace log4net.Appenders.Contrib
 					}
 					catch (Exception exc)
 					{
-						Trace.WriteLine(exc);
+						LogError(exc);
 					}
 					_writer = null;
 				}
@@ -281,7 +281,7 @@ namespace log4net.Appenders.Contrib
 					}
 					catch (Exception exc)
 					{
-						_log.Error(exc);
+						LogError(exc);
 					}
 
 					_socket.Dispose();
@@ -295,6 +295,7 @@ namespace log4net.Appenders.Contrib
 			try
 			{
 				_closing = true;
+
 				_senderThread.Join(TimeSpan.FromSeconds(10)); // give the sender thread some time to flush the messages
 
 				_senderThread.Interrupt();
@@ -306,7 +307,7 @@ namespace log4net.Appenders.Contrib
 			}
 			catch (Exception exc)
 			{
-				_log.Error(exc);
+				LogError(exc);
 			}
 
 			try
@@ -315,7 +316,7 @@ namespace log4net.Appenders.Contrib
 			}
 			catch (Exception exc)
 			{
-				_log.Error(exc);
+				LogError(exc);
 			}
 		}
 
@@ -323,6 +324,14 @@ namespace log4net.Appenders.Contrib
 		{
 			Dispose();
 			base.OnClose();
+		}
+
+		void LogError(Exception exc)
+		{
+			if (_closing)
+				Trace.WriteLine(exc);
+			else
+				_log.Error(exc);
 		}
 
 		private Socket _socket;
