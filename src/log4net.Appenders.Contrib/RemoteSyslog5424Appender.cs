@@ -35,6 +35,8 @@ namespace log4net.Appenders.Contrib
 			Facility = SyslogFacility.User;
 			TrailerChar = '\n';
 
+			_sendingPeriod = _defaultSendingPeriod;
+
 			_senderThread = new Thread(SenderThreadEntry) { Name = "SenderThread" };
 		}
 
@@ -207,6 +209,8 @@ namespace log4net.Appenders.Contrib
 				{
 					EnsureConnected();
 
+					_sendingPeriod = _defaultSendingPeriod;
+
 					while (true)
 					{
 						string frame;
@@ -231,6 +235,11 @@ namespace log4net.Appenders.Contrib
 					if ((uint)exc.HResult != 0x80131620) // COR_E_IO
 						LogError(exc);
 				}
+
+				var newPeriod = Math.Min(_sendingPeriod.TotalSeconds * 2, _maxSendingPeriod.TotalSeconds);
+				_sendingPeriod = TimeSpan.FromSeconds(newPeriod);
+
+				_log.Info(string.Format("Connection to the server lost. Re-try in {0} seconds.", newPeriod));
 
 				Disconnect();
 			}
@@ -346,6 +355,9 @@ namespace log4net.Appenders.Contrib
 
 		readonly ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
 		private readonly Thread _senderThread;
-		private readonly TimeSpan _sendingPeriod = TimeSpan.FromSeconds(5);
+
+		private TimeSpan _sendingPeriod;
+		private readonly TimeSpan _defaultSendingPeriod = TimeSpan.FromSeconds(5);
+		private readonly TimeSpan _maxSendingPeriod = TimeSpan.FromMinutes(10);
 	}
 }
