@@ -1,0 +1,15 @@
+﻿<?xml version="1.0"?>
+<package >
+ <metadata>
+	<id>log4net.Appenders.Contrib</id>
+	<version>$version_number$</version>
+	<authors>City Index Ltd</authors>
+	<owners>City Index Ltd</owners>
+	<requireLicenseAcceptance>false</requireLicenseAcceptance>
+	<description>Additional appenders for the log4net logging framework</description>
+	<copyright>Copyright 2015</copyright>
+ </metadata>
+ <files>
+	<file src="$build_output$\log4net.Appenders.Contrib.dll" target="lib\net45\log4net.Appenders.Contrib.dll" />
+ </files>
+</package>
