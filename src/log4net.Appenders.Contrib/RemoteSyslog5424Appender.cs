@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -88,6 +87,8 @@ namespace log4net.Appenders.Contrib
 
 		private string _messageId;
 
+		public int MaxQueueSize = 1024 * 1024;
+
 		public override void ActivateOptions()
 		{
 			base.ActivateOptions();
@@ -101,8 +102,17 @@ namespace log4net.Appenders.Contrib
 				var sourceMessage = RenderLoggingEvent(loggingEvent);
 				var frame = FormatMessage(sourceMessage, loggingEvent.Level);
 
-
-				_messageQueue.Enqueue(frame);
+				lock (_sync)
+				{
+					if (_messageQueue.Count == MaxQueueSize - 1)
+					{
+						var warningMessage = string.Format("Message queue size ({0}) is exceeded.", MaxQueueSize);
+						_messageQueue.Enqueue(FormatMessage(warningMessage, Level.Warn));
+					}
+					if (_messageQueue.Count >= MaxQueueSize)
+						return;
+					_messageQueue.Enqueue(frame);
+				}
 			}
 			catch (Exception exc)
 			{
@@ -216,13 +226,21 @@ namespace log4net.Appenders.Contrib
 					while (true)
 					{
 						string frame;
-						if (!_messageQueue.TryPeek(out frame))
-							break;
+
+						lock (_sync)
+						{
+							if (_messageQueue.Count == 0)
+								break;
+							frame = _messageQueue.Peek();
+						}
 
 						_writer.Write(frame);
 						_writer.Flush();
 
-						_messageQueue.TryDequeue(out frame);
+						lock (_messageQueue)
+						{
+							_messageQueue.Dequeue();
+						}
 					}
 
 					return;
@@ -350,7 +368,9 @@ namespace log4net.Appenders.Contrib
 
 		private readonly ILog _log = LogManager.GetLogger("RemoteSyslog5424AppenderDiagLogger");
 
-		readonly ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
+		private readonly Queue<string> _messageQueue = new Queue<string>();
+		private readonly object _sync = new object();
+
 		private readonly Thread _senderThread;
 		private readonly TimeSpan _sendingPeriod = TimeSpan.FromSeconds(5);
 	}
