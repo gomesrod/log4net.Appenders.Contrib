@@ -99,13 +99,8 @@ namespace log4net.Appenders.Contrib
 			try
 			{
 				var sourceMessage = RenderLoggingEvent(loggingEvent);
+				var frame = FormatMessage(sourceMessage, loggingEvent.Level);
 
-				var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
-				var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}",
-					GeneratePriority(loggingEvent.Level), Version, time, Hostname, AppName, ProcId, MessageId, sourceMessage);
-				if (TrailerChar != null)
-					message += TrailerChar;
-				var frame = string.Format("{0} {1}", message.Length, message);
 
 				_messageQueue.Enqueue(frame);
 			}
@@ -113,6 +108,17 @@ namespace log4net.Appenders.Contrib
 			{
 				LogError(exc);
 			}
+		}
+
+		private string FormatMessage(string sourceMessage, Level level)
+		{
+			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
+			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}",
+				GeneratePriority(level), Version, time, Hostname, AppName, ProcId, MessageId, sourceMessage);
+			if (TrailerChar != null)
+				message += TrailerChar;
+			var frame = string.Format("{0} {1}", message.Length, message);
+			return frame;
 		}
 
 		// Priority generation in RFC 5424 seems to be the same as in RFC 3164
