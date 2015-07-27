@@ -107,7 +107,13 @@ namespace log4net.Appenders.Contrib
 			if (parts.Count() != 2)
 				throw new ArgumentException();
 
-			Fields.Add(parts[0], parts[1]);
+			var value = parts[1];
+			if (value.StartsWith("$"))
+			{
+				value = value.Substring(1);
+				value = Environment.GetEnvironmentVariable(value);
+			}
+			Fields.Add(parts[0], value);
 		}
 
 		protected override void Append(LoggingEvent loggingEvent)
