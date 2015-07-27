@@ -126,7 +126,8 @@ namespace log4net.Appenders.Contrib
 				var structuredData = "";
 				if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
 				{
-					var fieldsText = string.Join(" ", Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, pair.Value)));
+					var fieldsText = string.Join(" ",
+						Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
 					structuredData = string.Format("[fields@{0} {1}] ", EnterpriseId, fieldsText);
 				}
 
@@ -171,6 +172,15 @@ namespace log4net.Appenders.Contrib
 				return SyslogSeverity.Informational;
 
 			return SyslogSeverity.Debug;
+		}
+
+		static string EscapeStructuredValue(string val)
+		{
+			var buf = new StringBuilder(val);
+			buf.Replace("\\", "\\\\");
+			buf.Replace("\"", "\\\"");
+			buf.Replace("]", "\\]");
+			return buf.ToString();
 		}
 
 		private void EnsureConnected()
