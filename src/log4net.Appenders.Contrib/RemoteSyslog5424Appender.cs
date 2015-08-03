@@ -34,6 +34,8 @@ namespace log4net.Appenders.Contrib
 			Facility = SyslogFacility.User;
 			TrailerChar = '\n';
 
+			Fields = new Dictionary<string, string>();
+
 			_senderThread = new Thread(SenderThreadEntry) { Name = "SenderThread" };
 		}
 
@@ -49,6 +51,8 @@ namespace log4net.Appenders.Contrib
 		public int Port { get; set; }
 		public string CertificatePath { get; set; }
 		public string Certificate { get; set; }
+
+		public Dictionary<string, string> Fields { get; set; }
 
 		public SyslogFacility Facility { get; set; }
 		public int Version { get; private set; }
@@ -87,6 +91,8 @@ namespace log4net.Appenders.Contrib
 
 		private string _messageId;
 
+		// NOTE see https://tools.ietf.org/html/rfc5424#section-7.2.2
+		public string EnterpriseId { get; set; }
 		public int MaxQueueSize = 1024 * 1024;
 
 		public override void ActivateOptions()
@@ -95,12 +101,35 @@ namespace log4net.Appenders.Contrib
 			_senderThread.Start();
 		}
 
+		public void AddField(string text)
+		{
+			var parts = text.Split('=');
+			if (parts.Count() != 2)
+				throw new ArgumentException();
+
+			var value = parts[1];
+			if (value.StartsWith("$"))
+			{
+				value = value.Substring(1);
+				value = Environment.GetEnvironmentVariable(value);
+			}
+			Fields.Add(parts[0], value);
+		}
+
 		protected override void Append(LoggingEvent loggingEvent)
 		{
 			try
 			{
+				var structuredData = "";
+				if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
+				{
+					var fieldsText = string.Join(" ",
+						Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
+					structuredData = string.Format("[fields@{0} {1}] ", EnterpriseId, fieldsText);
+				}
+
 				var sourceMessage = RenderLoggingEvent(loggingEvent);
-				var frame = FormatMessage(sourceMessage, loggingEvent.Level);
+				var frame = FormatMessage(sourceMessage, loggingEvent.Level, structuredData);
 
 				lock (_sync)
 				{
@@ -120,11 +149,11 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
-		private string FormatMessage(string sourceMessage, Level level)
+		private string FormatMessage(string sourceMessage, Level level, string structuredData = "")
 		{
 			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
-			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}",
-				GeneratePriority(level), Version, time, Hostname, AppName, ProcId, MessageId, sourceMessage);
+			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
+				GeneratePriority(level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
 			if (TrailerChar != null)
 				message += TrailerChar;
 			var frame = string.Format("{0} {1}", message.Length, message);
@@ -158,6 +187,15 @@ namespace log4net.Appenders.Contrib
 				return SyslogSeverity.Informational;
 
 			return SyslogSeverity.Debug;
+		}
+
+		static string EscapeStructuredValue(string val)
+		{
+			var buf = new StringBuilder(val);
+			buf.Replace("\\", "\\\\");
+			buf.Replace("\"", "\\\"");
+			buf.Replace("]", "\\]");
+			return buf.ToString();
 		}
 
 		private void EnsureConnected()
