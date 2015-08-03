@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -94,6 +93,7 @@ namespace log4net.Appenders.Contrib
 
 		// NOTE see https://tools.ietf.org/html/rfc5424#section-7.2.2
 		public string EnterpriseId { get; set; }
+		public int MaxQueueSize = 1024 * 1024;
 
 		public override void ActivateOptions()
 		{
@@ -120,9 +120,6 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
-				var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
-				var sourceMessage = RenderLoggingEvent(loggingEvent);
-
 				var structuredData = "";
 				if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
 				{
@@ -131,18 +128,36 @@ namespace log4net.Appenders.Contrib
 					structuredData = string.Format("[fields@{0} {1}] ", EnterpriseId, fieldsText);
 				}
 
-				var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
-					GeneratePriority(loggingEvent.Level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
-				if (TrailerChar != null)
-					message += TrailerChar;
-				var frame = string.Format("{0} {1}", message.Length, message);
+				var sourceMessage = RenderLoggingEvent(loggingEvent);
+				var frame = FormatMessage(sourceMessage, loggingEvent.Level, structuredData);
 
-				_messageQueue.Enqueue(frame);
+				lock (_sync)
+				{
+					if (_messageQueue.Count == MaxQueueSize - 1)
+					{
+						var warningMessage = string.Format("Message queue size ({0}) is exceeded. Not sending new messages until the queue backlog has been sent.", MaxQueueSize);
+						_messageQueue.Enqueue(FormatMessage(warningMessage, Level.Warn));
+					}
+					if (_messageQueue.Count >= MaxQueueSize)
+						return;
+					_messageQueue.Enqueue(frame);
+				}
 			}
 			catch (Exception exc)
 			{
 				LogError(exc);
 			}
+		}
+
+		private string FormatMessage(string sourceMessage, Level level, string structuredData = "")
+		{
+			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
+			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
+				GeneratePriority(level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
+			if (TrailerChar != null)
+				message += TrailerChar;
+			var frame = string.Format("{0} {1}", message.Length, message);
+			return frame;
 		}
 
 		// Priority generation in RFC 5424 seems to be the same as in RFC 3164
@@ -249,13 +264,21 @@ namespace log4net.Appenders.Contrib
 					while (true)
 					{
 						string frame;
-						if (!_messageQueue.TryPeek(out frame))
-							break;
+
+						lock (_sync)
+						{
+							if (_messageQueue.Count == 0)
+								break;
+							frame = _messageQueue.Peek();
+						}
 
 						_writer.Write(frame);
 						_writer.Flush();
 
-						_messageQueue.TryDequeue(out frame);
+						lock (_messageQueue)
+						{
+							_messageQueue.Dequeue();
+						}
 					}
 
 					return;
@@ -383,7 +406,9 @@ namespace log4net.Appenders.Contrib
 
 		private readonly ILog _log = LogManager.GetLogger("RemoteSyslog5424AppenderDiagLogger");
 
-		readonly ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
+		private readonly Queue<string> _messageQueue = new Queue<string>();
+		private readonly object _sync = new object();
+
 		private readonly Thread _senderThread;
 		private readonly TimeSpan _sendingPeriod = TimeSpan.FromSeconds(5);
 	}
