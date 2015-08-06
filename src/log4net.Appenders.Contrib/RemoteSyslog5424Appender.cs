@@ -91,8 +91,13 @@ namespace log4net.Appenders.Contrib
 
 		private string _messageId;
 
+		private string _enterpriseId="0";
 		// NOTE see https://tools.ietf.org/html/rfc5424#section-7.2.2
-		public string EnterpriseId { get; set; }
+		public string EnterpriseId
+		{
+		 get { return _enterpriseId ?? "0"; }
+		 set { _enterpriseId = value; }
+		}
 		public int MaxQueueSize = 1024 * 1024;
 
 		public override void ActivateOptions()
