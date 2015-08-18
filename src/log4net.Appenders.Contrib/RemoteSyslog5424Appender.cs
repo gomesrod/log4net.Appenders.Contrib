@@ -367,10 +367,11 @@ namespace log4net.Appenders.Contrib
 			{
 				_closing = true;
 
-				_senderThread.Join(TimeSpan.FromSeconds(10)); // give the sender thread some time to flush the messages
+				// give the sender thread some time to flush the messages
+				_senderThread.Join(TimeSpan.FromSeconds(2));
 
 				_senderThread.Interrupt();
-				_senderThread.Join(TimeSpan.FromSeconds(5));
+				_senderThread.Join(TimeSpan.FromSeconds(1));
 
 				_senderThread.Abort();
 
