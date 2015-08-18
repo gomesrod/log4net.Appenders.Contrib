@@ -36,7 +36,11 @@ namespace log4net.Appenders.Contrib
 
 			Fields = new Dictionary<string, string>();
 
-			_senderThread = new Thread(SenderThreadEntry) { Name = "SenderThread" };
+			_senderThread = new Thread(SenderThreadEntry)
+			{
+				Name = "SenderThread",
+				IsBackground = true,
+			};
 		}
 
 		public RemoteSyslog5424Appender(string server, int port, string certificatePath)
