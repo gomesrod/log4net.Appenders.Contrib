@@ -389,6 +389,8 @@ namespace log4net.Appenders.Contrib
 
 		protected override void OnClose()
 		{
+			// note that total time for all AppDomain.ProcessExit handlers is limited by runtime, 2 seconds by default
+			// https://msdn.microsoft.com/en-us/library/system.appdomain.processexit(v=vs.110).aspx
 			Dispose();
 			base.OnClose();
 		}
