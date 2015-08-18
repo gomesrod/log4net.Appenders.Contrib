@@ -240,13 +240,13 @@ namespace log4net.Appenders.Contrib
 			{
 				while (!_disposed)
 				{
-					var startTime = DateTime.UtcNow;
-					while (DateTime.UtcNow - startTime < _sendingPeriod && !_closing)
-						Thread.Sleep(10);
-
 					TrySendMessages();
 					if (_closing)
 						break;
+
+					var startTime = DateTime.UtcNow;
+					while (DateTime.UtcNow - startTime < _sendingPeriod && !_closing)
+						Thread.Sleep(10);
 				}
 			}
 			catch (ThreadInterruptedException)
