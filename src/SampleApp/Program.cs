@@ -32,7 +32,7 @@ namespace log4net.Appenders.Contrib.SampleApp
 				Console.WriteLine("\n\nPress a key to exit.");
 				Console.ReadKey();
 
-				log.Logger.Repository.Shutdown();
+				RemoteSyslog5424Appender.Flush("RemoteAppender");
 			}
 			catch (Exception exc)
 			{

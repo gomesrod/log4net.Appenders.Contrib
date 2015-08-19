@@ -13,6 +13,7 @@ using System.Threading;
 
 using log4net.Appender;
 using log4net.Core;
+using log4net.Repository.Hierarchy;
 using SyslogFacility = log4net.Appender.RemoteSyslogAppender.SyslogFacility;
 using SyslogSeverity = log4net.Appender.RemoteSyslogAppender.SyslogSeverity;
 
@@ -266,6 +267,27 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
+				Flush();
+			}
+			catch (ThreadInterruptedException)
+			{
+			}
+			catch (ThreadAbortException)
+			{
+			}
+			catch (ObjectDisposedException)
+			{
+			}
+			catch (Exception exc)
+			{
+				LogError(exc);
+			}
+		}
+
+		public void Flush()
+		{
+			lock (_sendingSync)
+			{
 				try
 				{
 					EnsureConnected();
@@ -304,19 +326,6 @@ namespace log4net.Appenders.Contrib
 				}
 
 				Disconnect();
-			}
-			catch (ThreadInterruptedException)
-			{
-			}
-			catch (ThreadAbortException)
-			{
-			}
-			catch (ObjectDisposedException)
-			{
-			}
-			catch (Exception exc)
-			{
-				LogError(exc);
 			}
 		}
 
@@ -408,6 +417,13 @@ namespace log4net.Appenders.Contrib
 				_log.Error(exc);
 		}
 
+		public static void Flush(string appenderName)
+		{
+			var hierarchy = (Hierarchy)LogManager.GetRepository();
+			var appender = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
+			((RemoteSyslog5424Appender)appender).Flush();
+		}
+
 		private Socket _socket;
 		private SslStream _stream;
 		private TextWriter _writer;
@@ -420,6 +436,7 @@ namespace log4net.Appenders.Contrib
 
 		private readonly Queue<string> _messageQueue = new Queue<string>();
 		private readonly object _sync = new object();
+		private readonly object _sendingSync = new object();
 
 		private readonly Thread _senderThread;
 		private readonly TimeSpan _sendingPeriod = TimeSpan.FromSeconds(5);
