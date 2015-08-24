@@ -21,6 +21,7 @@ namespace log4net.Appenders.Contrib.UnitTests
 			{
 				appender.Layout = layout;
 				appender.AppName = typeof(RemoteSyslog5424AppenderTest).Name;
+				appender.ActivateOptions();
 
 				BasicConfigurator.Configure(appender);
 				var log = LogManager.GetLogger(typeof(RemoteSyslog5424AppenderTest));

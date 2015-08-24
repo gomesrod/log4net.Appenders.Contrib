@@ -13,6 +13,7 @@ using System.Threading;
 
 using log4net.Appender;
 using log4net.Core;
+using log4net.Repository.Hierarchy;
 using SyslogFacility = log4net.Appender.RemoteSyslogAppender.SyslogFacility;
 using SyslogSeverity = log4net.Appender.RemoteSyslogAppender.SyslogSeverity;
 
@@ -36,7 +37,11 @@ namespace log4net.Appenders.Contrib
 
 			Fields = new Dictionary<string, string>();
 
-			_senderThread = new Thread(SenderThreadEntry) { Name = "SenderThread" };
+			_senderThread = new Thread(SenderThreadEntry)
+			{
+				Name = "SenderThread",
+				IsBackground = true,
+			};
 		}
 
 		public RemoteSyslog5424Appender(string server, int port, string certificatePath)
@@ -240,13 +245,13 @@ namespace log4net.Appenders.Contrib
 			{
 				while (!_disposed)
 				{
-					var startTime = DateTime.UtcNow;
-					while (DateTime.UtcNow - startTime < _sendingPeriod && !_closing)
-						Thread.Sleep(10);
-
 					TrySendMessages();
 					if (_closing)
 						break;
+
+					var startTime = DateTime.UtcNow;
+					while (DateTime.UtcNow - startTime < _sendingPeriod && !_closing)
+						Thread.Sleep(10);
 				}
 			}
 			catch (ThreadInterruptedException)
@@ -261,6 +266,27 @@ namespace log4net.Appenders.Contrib
 		private void TrySendMessages()
 		{
 			try
+			{
+				Flush();
+			}
+			catch (ThreadInterruptedException)
+			{
+			}
+			catch (ThreadAbortException)
+			{
+			}
+			catch (ObjectDisposedException)
+			{
+			}
+			catch (Exception exc)
+			{
+				LogError(exc);
+			}
+		}
+
+		public void Flush()
+		{
+			lock (_sendingSync)
 			{
 				try
 				{
@@ -300,19 +326,6 @@ namespace log4net.Appenders.Contrib
 				}
 
 				Disconnect();
-			}
-			catch (ThreadInterruptedException)
-			{
-			}
-			catch (ThreadAbortException)
-			{
-			}
-			catch (ObjectDisposedException)
-			{
-			}
-			catch (Exception exc)
-			{
-				LogError(exc);
 			}
 		}
 
@@ -363,10 +376,11 @@ namespace log4net.Appenders.Contrib
 			{
 				_closing = true;
 
-				_senderThread.Join(TimeSpan.FromSeconds(10)); // give the sender thread some time to flush the messages
+				// give the sender thread some time to flush the messages
+				_senderThread.Join(TimeSpan.FromSeconds(2));
 
 				_senderThread.Interrupt();
-				_senderThread.Join(TimeSpan.FromSeconds(5));
+				_senderThread.Join(TimeSpan.FromSeconds(1));
 
 				_senderThread.Abort();
 
@@ -389,6 +403,8 @@ namespace log4net.Appenders.Contrib
 
 		protected override void OnClose()
 		{
+			// note that total time for all AppDomain.ProcessExit handlers is limited by runtime, 2 seconds by default
+			// https://msdn.microsoft.com/en-us/library/system.appdomain.processexit(v=vs.110).aspx
 			Dispose();
 			base.OnClose();
 		}
@@ -399,6 +415,13 @@ namespace log4net.Appenders.Contrib
 				Trace.WriteLine(exc);
 			else
 				_log.Error(exc);
+		}
+
+		public static void Flush(string appenderName)
+		{
+			var hierarchy = (Hierarchy)LogManager.GetRepository();
+			var appender = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
+			((RemoteSyslog5424Appender)appender).Flush();
 		}
 
 		private Socket _socket;
@@ -413,6 +436,7 @@ namespace log4net.Appenders.Contrib
 
 		private readonly Queue<string> _messageQueue = new Queue<string>();
 		private readonly object _sync = new object();
+		private readonly object _sendingSync = new object();
 
 		private readonly Thread _senderThread;
 		private readonly TimeSpan _sendingPeriod = TimeSpan.FromSeconds(5);
