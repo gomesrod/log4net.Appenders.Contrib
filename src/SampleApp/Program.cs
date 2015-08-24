@@ -22,11 +22,16 @@ namespace log4net.Appenders.Contrib.SampleApp
 
 				Console.WriteLine("Writing logs...\n\n");
 
-				var logs = new List<string> { "I’m broken. Please show this to someone who can fix can fix", "An error has occured on the error logging device.", "Error ocurred when attempting to print error message." };
-				
+				var logs = new List<string>
+				{
+					"I’m broken. Please show this to someone who can fix can fix",
+					"An error has occured on the error logging device.",
+					"Error ocurred when attempting to print error message."
+				};
+
 				for (var i = 0; i < 3; i++)
 				{
-				 log.ErrorFormat("{0} ({1}_{2})", logs[i], i, Guid.NewGuid());
+					log.ErrorFormat("{0} ({1}_{2})", logs[i], i, Guid.NewGuid());
 				}
 
 				Console.WriteLine("\n\nPress a key to exit.");
