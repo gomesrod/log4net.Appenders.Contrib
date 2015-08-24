@@ -31,7 +31,11 @@ namespace log4net.Appenders.Contrib.SampleApp
 
 				for (var i = 0; i < 3; i++)
 				{
-					log.ErrorFormat("{0} ({1}_{2})", logs[i], i, Guid.NewGuid());
+					log.Error(
+						new {
+							Message = logs[i],
+							Id = string.Format("{0}_{1}", i, Guid.NewGuid()),
+						});
 				}
 
 				Console.WriteLine("\n\nPress a key to exit.");
