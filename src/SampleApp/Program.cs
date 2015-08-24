@@ -20,13 +20,24 @@ namespace log4net.Appenders.Contrib.SampleApp
 				AppDomain.CurrentDomain.UnhandledException +=
 					(sender, eventArgs) => Console.WriteLine(eventArgs.ExceptionObject.ToString());
 
+				Console.WriteLine("Writing logs...\n\n");
+
+				var logs = new List<string>
+				{
+					"I’m broken. Please show this to someone who can fix can fix",
+					"An error has occured on the error logging device.",
+					"Error ocurred when attempting to print error message."
+				};
+
 				for (var i = 0; i < 3; i++)
 				{
-					var message = i + "_" + Guid.NewGuid();
-					log.Info(message);
+					log.ErrorFormat("{0} ({1}_{2})", logs[i], i, Guid.NewGuid());
 				}
 
-				log.Logger.Repository.Shutdown();
+				Console.WriteLine("\n\nPress a key to exit.");
+				Console.ReadKey();
+
+				RemoteSyslog5424Appender.Flush("RemoteAppender");
 			}
 			catch (Exception exc)
 			{

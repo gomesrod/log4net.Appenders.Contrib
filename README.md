@@ -8,6 +8,7 @@ DRY up your log4net config by using these log4net Appenders with sensible defaul
 ```xml
 <appender name="RemoteAppender" type="log4net.Appenders.Contrib.RemoteSyslog5424Appender,log4net.Appenders.Contrib">
   <AppName>your app name</AppName>
+  <Hostname>LON-WS0000</Hostname>
   <Server>ingestor.cityindex.logsearch.io</Server>
   <Port>443</Port>
   <Certificate>
@@ -21,8 +22,12 @@ Bmo1t/kphLKZnmo=
 -----END CERTIFICATE-----
   </Certificate>
   <layout type="log4net.Layout.PatternLayout">
-    <conversionPattern value="%message" />
+    <conversionPattern value="%-5p %d %t %c %m" /><!-- standard ci_log4net layout, WITHOUT the trailing newline-->
   </layout>
+  <Field>type=ci_log4net</Field>    <!-- trigger additional type:ci_log4net parsing-->
+  <Field>environment=DEV</Field>    <!-- Decorate the message with additional structured data fields -->
+  <Field>user=$USERNAME</Field>     <!-- $KEY_NAME will pull values from the current environment -->
+  
 </appender>
 ...
 <root>
