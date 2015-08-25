@@ -24,7 +24,7 @@ namespace log4net.Appenders.Contrib.SampleApp
 
 				var logs = new List<string>
 				{
-					"I’m broken. Please show this to someone who can fix can fix",
+					"I'm broken. Please show this to someone who can fix me.",
 					"An error has occured on the error logging device.",
 					"Error ocurred when attempting to print error message."
 				};
