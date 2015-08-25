@@ -17,7 +17,7 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 	{
 		public void Start(int port, string certificatePath)
 		{
-			Trace.WriteLine("MockServer.Start()");
+			Trace.WriteLine("     ===== MockServer.Start() =====     ");
 			lock (_sync)
 			{
 				_port = port;
@@ -30,7 +30,7 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 
 		public void Stop()
 		{
-			Trace.WriteLine("MockServer.Stop()");
+			Trace.WriteLine("     ===== MockServer.Stop() =====     ");
 			lock (_sync)
 			{
 				if (_listener != null)
@@ -45,7 +45,7 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 
 		public void CloseConnections()
 		{
-			Trace.WriteLine("MockServer.CloseConnections()");
+			Trace.WriteLine("     ===== MockServer.CloseConnections() =====     ");
 			lock (_sync)
 			{
 				foreach (var connection in _connections)
