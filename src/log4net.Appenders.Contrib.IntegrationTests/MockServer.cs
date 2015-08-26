@@ -20,6 +20,9 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 			Trace.WriteLine("     ===== MockServer.Start() =====     ");
 			lock (_sync)
 			{
+				if (_listenerThread != null)
+					throw new InvalidOperationException();
+
 				_port = port;
 				_serverCertificate = new X509Certificate2(certificatePath);
 
@@ -40,6 +43,10 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 				}
 
 				CloseConnections();
+
+				if (!_listenerThread.Join(TimeSpan.FromSeconds(5)))
+					_listenerThread.Abort();
+				_listenerThread = null;
 			}
 		}
 
