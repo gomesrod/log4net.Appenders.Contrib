@@ -16,41 +16,35 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 		public void SetUp()
 		{
 			_server.Start(Port, @"Certificate\test.pfx");
+			CreateAppender();
 		}
 
 		[TearDown]
 		public void TearDown()
 		{
+			if (_appender != null)
+			{
+				_appender.Dispose();
+				_appender = null;
+			}
+
 			_server.Dispose();
 		}
 
 		[Test]
 		public void TestConnectionInterruption()
 		{
-			var layout = new PatternLayout("%.255message");
-			layout.ActivateOptions();
+			var i = 0;
+			for (; i < 3; i++)
+				_log.Info(FormatMessage(i));
 
-			using (var appender = new RemoteSyslog5424Appender("localhost", Port, @"Certificate\test.cer"))
-			{
-				appender.Layout = layout;
-				appender.AppName = typeof(RemoteSyslog5424AppenderTest).Name;
-				appender.ActivateOptions();
+			Thread.Sleep(TimeSpan.FromSeconds(6));
+			_server.CloseConnections();
 
-				BasicConfigurator.Configure(appender);
-				var log = LogManager.GetLogger(typeof(RemoteSyslog5424AppenderTest));
+			for (; i < 6; i++)
+				_log.Info(FormatMessage(i));
 
-				var i = 0;
-				for (; i < 3; i++)
-					log.Info(FormatMessage(i));
-
-				Thread.Sleep(TimeSpan.FromSeconds(6));
-				_server.CloseConnections();
-
-				for (; i < 6; i++)
-					log.Info(FormatMessage(i));
-
-				Thread.Sleep(TimeSpan.FromSeconds(110));
-			}
+			Thread.Sleep(TimeSpan.FromSeconds(10));
 		}
 
 		private static string FormatMessage(int i)
@@ -59,7 +53,29 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 			return message;
 		}
 
+		void CreateAppender()
+		{
+			var layout = new PatternLayout("%.255message");
+			layout.ActivateOptions();
+
+			var appender = new RemoteSyslog5424Appender("localhost", Port, @"Certificate\test.cer")
+			{
+				Layout = layout,
+				AppName = typeof(RemoteSyslog5424AppenderTest).Name
+			};
+
+			appender.ActivateOptions();
+
+			BasicConfigurator.Configure(appender);
+
+			_appender = appender;
+			_log = LogManager.GetLogger(typeof(RemoteSyslog5424AppenderTest));
+		}
+
 		readonly MockServer _server = new MockServer();
 		private const int Port = 44344;
+
+		private RemoteSyslog5424Appender _appender;
+		private ILog _log;
 	}
 }
