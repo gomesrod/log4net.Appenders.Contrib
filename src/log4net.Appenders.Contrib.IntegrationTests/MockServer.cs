@@ -42,7 +42,7 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 					_listener = null;
 				}
 
-				CloseConnections();
+				CloseConnections(false);
 
 				if (!_listenerThread.Join(TimeSpan.FromSeconds(5)))
 					_listenerThread.Abort();
@@ -50,9 +50,11 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 			}
 		}
 
-		public void CloseConnections()
+		public void CloseConnections(bool trace = true)
 		{
-			Trace.WriteLine("     ===== MockServer.CloseConnections() =====     ");
+			if (trace)
+				Trace.WriteLine("     ===== MockServer.CloseConnections() =====     ");
+
 			lock (_sync)
 			{
 				foreach (var connection in _connections)
