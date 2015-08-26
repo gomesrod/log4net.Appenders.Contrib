@@ -15,7 +15,7 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 		[SetUp]
 		public void SetUp()
 		{
-			_server.Start(Port, @"Certificate\test.pfx");
+			StartServer();
 			CreateAppender();
 		}
 
@@ -51,6 +51,11 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 		{
 			var message = i + "_" + Guid.NewGuid();
 			return message;
+		}
+
+		private void StartServer()
+		{
+			_server.Start(Port, @"Certificate\test.pfx");
 		}
 
 		void CreateAppender()
