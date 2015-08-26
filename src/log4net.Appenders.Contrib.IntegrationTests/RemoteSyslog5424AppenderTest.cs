@@ -15,7 +15,6 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 		[SetUp]
 		public void SetUp()
 		{
-			StartServer();
 			CreateAppender();
 		}
 
@@ -32,8 +31,26 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 		}
 
 		[Test]
+		public void TestServerNotResponding()
+		{
+			var testMessage = FormatMessage("TestServerNotResponding");
+			_log.Info(testMessage);
+
+			Thread.Sleep(TimeSpan.FromSeconds(6));
+			StartServer();
+			Thread.Sleep(TimeSpan.FromSeconds(6));
+
+			var messages = _server.GetMessages();
+			Assert.IsTrue(messages.Any(message => message.Contains(testMessage)));
+
+			_server.ClearMessages();
+		}
+
+		[Test]
 		public void TestConnectionInterruption()
 		{
+			StartServer();
+
 			var i = 0;
 			for (; i < 3; i++)
 				_log.Info(FormatMessage("TestConnectionInterruption" + i));
