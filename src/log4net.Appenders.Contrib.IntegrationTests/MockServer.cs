@@ -118,6 +118,11 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 							var line = reader.ReadLine();
 							if (line == null)
 								break;
+
+							lock (_sync)
+							{
+								_messages.Add(line);
+							}
 							Trace.WriteLine("  : " + line);
 						}
 					}
@@ -138,6 +143,22 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 			}
 		}
 
+		public List<string> GetMessages()
+		{
+			lock (_sync)
+			{
+				return new List<string>(_messages);
+			}
+		}
+
+		public void ClearMessages()
+		{
+			lock (_sync)
+			{
+				_messages.Clear();
+			}
+		}
+
 		readonly object _sync = new object();
 
 		private X509Certificate _serverCertificate;
@@ -145,5 +166,7 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 		private TcpListener _listener;
 		private readonly List<TcpClient> _connections = new List<TcpClient>();
 		private Thread _listenerThread;
+
+		readonly List<string> _messages = new List<string>();
 	}
 }
