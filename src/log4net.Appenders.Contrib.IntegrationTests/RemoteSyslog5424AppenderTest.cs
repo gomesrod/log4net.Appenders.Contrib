@@ -36,21 +36,26 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 		{
 			var i = 0;
 			for (; i < 3; i++)
-				_log.Info(FormatMessage(i));
+				_log.Info(FormatMessage("TestConnectionInterruption" + i));
 
 			Thread.Sleep(TimeSpan.FromSeconds(6));
 			_server.CloseConnections();
 
 			for (; i < 6; i++)
-				_log.Info(FormatMessage(i));
+				_log.Info(FormatMessage("TestConnectionInterruption" + i));
 
 			Thread.Sleep(TimeSpan.FromSeconds(10));
 		}
 
-		private static string FormatMessage(int i)
+		private static string FormatMessage(string id)
 		{
-			var message = i + "_" + Guid.NewGuid();
+			var message = id + "_" + Guid.NewGuid();
 			return message;
+		}
+
+		private static string FormatMessage(string id, int i)
+		{
+			return FormatMessage(id + i);
 		}
 
 		private void StartServer()
