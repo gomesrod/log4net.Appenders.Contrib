@@ -330,6 +330,9 @@ namespace log4net.Appenders.Contrib
 						LogError(exc);
 				}
 
+				if (_socket != null && IsConnected(_socket))
+					return;
+
 				var newPeriod = Math.Min(_sendingPeriod.TotalSeconds * 2, _maxSendingPeriod.TotalSeconds);
 				_sendingPeriod = TimeSpan.FromSeconds(newPeriod);
 
@@ -378,6 +381,11 @@ namespace log4net.Appenders.Contrib
 					_socket = null;
 				}
 			}
+		}
+
+		static bool IsConnected(Socket socket)
+		{
+			return !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
 		}
 
 		public void Dispose()
