@@ -323,7 +323,7 @@ namespace log4net.Appenders.Contrib
 				}
 				catch (SocketException exc)
 				{
-					if (exc.SocketErrorCode != SocketError.TimedOut)
+					if (!IgnoreSocketErrors.Contains(exc.SocketErrorCode))
 						LogError(exc);
 				}
 				catch (IOException exc)
@@ -343,6 +343,10 @@ namespace log4net.Appenders.Contrib
 				Disconnect();
 			}
 		}
+
+		private static readonly SocketError[] IgnoreSocketErrors = {
+			SocketError.TimedOut, SocketError.ConnectionRefused
+		};
 
 		void Disconnect()
 		{
