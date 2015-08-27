@@ -221,10 +221,10 @@ namespace log4net.Appenders.Contrib
 				if (_socket != null)
 					return;
 
-				_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				_socket.Connect(Server, Port);
+				var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				socket.Connect(Server, Port);
 
-				var rawStream = new NetworkStream(_socket);
+				var rawStream = new NetworkStream(socket);
 
 				_stream = new SslStream(rawStream, false, VerifyServerCertificate);
 				var certificate = (string.IsNullOrEmpty(CertificatePath))
@@ -234,6 +234,8 @@ namespace log4net.Appenders.Contrib
 				_stream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
 
 				_writer = new StreamWriter(_stream, Encoding.UTF8);
+
+				_socket = socket;
 			}
 		}
 
@@ -289,7 +291,7 @@ namespace log4net.Appenders.Contrib
 
 		public void Flush()
 		{
-			lock (_sendingSync)
+			lock (_initSync)
 			{
 				try
 				{
@@ -454,7 +456,6 @@ namespace log4net.Appenders.Contrib
 
 		private readonly Queue<string> _messageQueue = new Queue<string>();
 		private readonly object _sync = new object();
-		private readonly object _sendingSync = new object();
 
 		private readonly Thread _senderThread;
 
