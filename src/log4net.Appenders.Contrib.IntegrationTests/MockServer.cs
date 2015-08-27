@@ -79,8 +79,8 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 
 				while (true)
 				{
-					var client = _listener.AcceptTcpClient();
-					ProcessConnection(client);
+					var socket = _listener.AcceptSocket();
+					ProcessConnection(socket);
 				}
 			}
 			catch (SocketException)
@@ -91,24 +91,26 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 			}
 		}
 
-		void ProcessConnection(TcpClient client)
+		void ProcessConnection(Socket socket)
 		{
 			lock (_sync)
 			{
-				_connections.Add(client);
-			}
+				var stream = new NetworkStream(socket);
+				var connectionInfo = new ConnectionInfo(socket, stream);
+				_connections.Add(connectionInfo);
 
-			var thread = new Thread(ConnectionThreadEntry);
-			thread.Start(client);
+				var thread = new Thread(ConnectionThreadEntry);
+				thread.Start(connectionInfo);
+			}
 		}
 
 		void ConnectionThreadEntry(object state)
 		{
 			try
 			{
-				var client = (TcpClient)state;
+				var connection = (ConnectionInfo)state;
 
-				var sslStream = new SslStream(client.GetStream(), false);
+				var sslStream = new SslStream(connection.Stream, false);
 				try
 				{
 					sslStream.AuthenticateAsServer(_serverCertificate, false, SslProtocols.Tls, false);
@@ -136,8 +138,11 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 				catch (IOException)
 				{ }
 
-				sslStream.Close();
-				client.Close();
+				lock (_sync)
+				{
+					connection.Close();
+					_connections.Remove(connection);
+				}
 			}
 			catch (Exception exc)
 			{
@@ -166,7 +171,7 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 		private X509Certificate _serverCertificate;
 		private int _port;
 		private TcpListener _listener;
-		private readonly List<TcpClient> _connections = new List<TcpClient>();
+		private readonly HashSet<ConnectionInfo> _connections = new HashSet<ConnectionInfo>();
 		private Thread _listenerThread;
 
 		readonly List<string> _messages = new List<string>();
