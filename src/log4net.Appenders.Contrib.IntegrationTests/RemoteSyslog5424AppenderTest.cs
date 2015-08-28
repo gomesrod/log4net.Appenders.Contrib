@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
+using log4net.Appender;
 using log4net.Config;
 using log4net.Layout;
 using NUnit.Framework;
@@ -100,10 +101,16 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 				Layout = layout,
 				AppName = typeof(RemoteSyslog5424AppenderTest).Name
 			};
-
 			appender.ActivateOptions();
 
-			BasicConfigurator.Configure(appender);
+			var diagAppender = new TraceAppender
+			{
+				Layout = layout,
+				Name = "RemoteSyslog5424AppenderDiagLogger",
+			};
+			diagAppender.ActivateOptions();
+
+			BasicConfigurator.Configure(diagAppender, appender);
 
 			_appender = appender;
 			_log = LogManager.GetLogger(typeof(RemoteSyslog5424AppenderTest));
