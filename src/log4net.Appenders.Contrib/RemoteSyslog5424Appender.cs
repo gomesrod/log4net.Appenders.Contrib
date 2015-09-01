@@ -65,6 +65,12 @@ namespace log4net.Appenders.Contrib
 
 		public char? TrailerChar { get; set; }
 
+		public int TrailerCharCode
+		{
+			get { return (TrailerChar != null) ? (int)TrailerChar : 0; }
+			set { TrailerChar = (char)value;}
+		}
+
 		public string Hostname
 		{
 			get { return _hostname ?? "-"; }
