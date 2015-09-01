@@ -167,9 +167,9 @@ namespace log4net.Appenders.Contrib
 			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
 			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
 				GeneratePriority(level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
+			var frame = string.Format("{0} {1}", message.Length, Escape(message));
 			if (TrailerChar != null)
-				message += TrailerChar;
-			var frame = string.Format("{0} {1}", message.Length, message);
+				frame += TrailerChar;
 			return frame;
 		}
 
@@ -432,6 +432,17 @@ namespace log4net.Appenders.Contrib
 			var hierarchy = (Hierarchy)LogManager.GetRepository();
 			var appender = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
 			((RemoteSyslog5424Appender)appender).Flush();
+		}
+
+		private string Escape(string val)
+		{
+			if (TrailerChar == null)
+				return val;
+
+			var ch = TrailerChar.Value;
+			if (ch == '\n')
+				return val.Replace("\n", "\\n");
+			return val.Replace(new string(ch, 1), string.Format("\\u{0}", ((int)ch).ToString("X4")));
 		}
 
 		private Socket _socket;
