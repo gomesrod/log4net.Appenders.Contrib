@@ -54,17 +54,17 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 
 			var sentMessages = new List<string>();
 			var i = 0;
-			for (; i < 3; i++)
+			for (; i < 100; i++)
 			{
 				var message = FormatMessage("TestConnectionInterruption" + i);
 				_log.Info(message);
 				sentMessages.Add(message);
 			}
 
-			Thread.Sleep(TimeSpan.FromSeconds(6));
+			Thread.Sleep(TimeSpan.FromSeconds(11));
 			_server.CloseConnections();
 
-			for (; i < 6; i++)
+			for (; i < 200; i++)
 			{
 				var message = FormatMessage("TestConnectionInterruption" + i);
 				_log.Info(message);
@@ -74,10 +74,9 @@ namespace log4net.Appenders.Contrib.IntegrationTests
 			Thread.Sleep(TimeSpan.FromSeconds(16));
 
 			var messages = _server.GetMessages();
-			foreach (var sentMessage in sentMessages)
-			{
-				Assert.IsTrue(messages.Any(message => message.Contains(sentMessage)));
-			}
+			var missingMessages = sentMessages.Count(sentMessage => !messages.Any(message => message.Contains(sentMessage)));
+
+			Assert.IsTrue(missingMessages < sentMessages.Count * 0.01);
 		}
 
 		private static string FormatMessage(string id)
