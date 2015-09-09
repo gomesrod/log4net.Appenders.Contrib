@@ -98,6 +98,14 @@ namespace log4net.Appenders.Contrib
 		private string _messageId;
 
 		// NOTE see https://tools.ietf.org/html/rfc5424#section-7.2.2
+		public string StructuredDataId
+		{
+			get { return _structuredDataId ?? "fields"; }
+			set { _structuredDataId = value; }
+		}
+
+		private string _structuredDataId;
+
 		public string EnterpriseId
 		{
 			get { return _enterpriseId ?? "0"; }
@@ -138,7 +146,7 @@ namespace log4net.Appenders.Contrib
 				{
 					var fieldsText = string.Join(" ",
 						Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
-					structuredData = string.Format("[fields@{0} {1}] ", EnterpriseId, fieldsText);
+					structuredData = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
 				}
 
 				var sourceMessage = RenderLoggingEvent(loggingEvent);
