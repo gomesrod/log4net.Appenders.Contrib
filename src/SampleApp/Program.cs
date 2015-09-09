@@ -31,11 +31,13 @@ namespace log4net.Appenders.Contrib.SampleApp
 
 				for (var i = 0; i < 3; i++)
 				{
+					var id = string.Format("{0}_{1}", i, Guid.NewGuid());
+
 					log.Error(
 						new {
 							type = "json",
-							Message = logs[i],
-							Id = string.Format("{0}_{1}", i, Guid.NewGuid()),
+							Message = logs[i] + "_" + id,
+							Id = id,
 						});
 				}
 
