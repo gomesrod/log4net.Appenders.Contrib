@@ -33,6 +33,7 @@ namespace log4net.Appenders.Contrib.SampleApp
 				{
 					log.Error(
 						new {
+							type = "json",
 							Message = logs[i],
 							Id = string.Format("{0}_{1}", i, Guid.NewGuid()),
 						});
