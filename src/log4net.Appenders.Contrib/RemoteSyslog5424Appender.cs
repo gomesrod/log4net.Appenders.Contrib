@@ -341,7 +341,7 @@ namespace log4net.Appenders.Contrib
 				var newPeriod = Math.Min(_sendingPeriod.TotalSeconds * 2, _maxSendingPeriod.TotalSeconds);
 				_sendingPeriod = TimeSpan.FromSeconds(newPeriod);
 
-				_log.Info(string.Format("Connection to the server lost. Re-try in {0} seconds.", newPeriod));
+				LogDiagnosticInfo(string.Format("Connection to the server lost. Re-try in {0} seconds.", newPeriod));
 
 				Disconnect();
 			}
@@ -427,12 +427,25 @@ namespace log4net.Appenders.Contrib
 			base.OnClose();
 		}
 
-		void LogError(Exception exc)
+		void LogDiagnosticError(string message)
 		{
 			if (_closing)
-				Trace.WriteLine(exc);
+				Trace.WriteLine(message);
 			else
-				_log.Error(exc);
+				_log.Error(message);
+		}
+
+		void LogError(Exception exc)
+		{
+			LogDiagnosticError(exc.ToString());
+		}
+
+		void LogDiagnosticInfo(string message)
+		{
+			if (_closing)
+				Trace.WriteLine(message);
+			else
+				_log.Info(message);
 		}
 
 		public static void Flush(string appenderName)
