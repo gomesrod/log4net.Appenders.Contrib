@@ -221,10 +221,10 @@ namespace log4net.Appenders.Contrib
 				if (_socket != null)
 					return;
 
-				_socket = new Socket(SocketType.Stream, ProtocolType.IP);
-				_socket.Connect(Server, Port);
+				var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				socket.Connect(Server, Port);
 
-				var rawStream = new NetworkStream(_socket);
+				var rawStream = new NetworkStream(socket);
 
 				_stream = new SslStream(rawStream, false, VerifyServerCertificate);
 				var certificate = (string.IsNullOrEmpty(CertificatePath))
@@ -234,6 +234,8 @@ namespace log4net.Appenders.Contrib
 				_stream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
 
 				_writer = new StreamWriter(_stream, Encoding.UTF8);
+
+				_socket = socket;
 			}
 		}
 
@@ -289,7 +291,7 @@ namespace log4net.Appenders.Contrib
 
 		public void Flush()
 		{
-			lock (_sendingSync)
+			lock (_initSync)
 			{
 				try
 				{
@@ -321,7 +323,7 @@ namespace log4net.Appenders.Contrib
 				}
 				catch (SocketException exc)
 				{
-					if (exc.SocketErrorCode != SocketError.TimedOut)
+					if (!IgnoreSocketErrors.Contains(exc.SocketErrorCode))
 						LogError(exc);
 				}
 				catch (IOException exc)
@@ -329,6 +331,9 @@ namespace log4net.Appenders.Contrib
 					if ((uint)exc.HResult != 0x80131620) // COR_E_IO
 						LogError(exc);
 				}
+
+				if (_socket != null && IsConnected(_socket))
+					return;
 
 				var newPeriod = Math.Min(_sendingPeriod.TotalSeconds * 2, _maxSendingPeriod.TotalSeconds);
 				_sendingPeriod = TimeSpan.FromSeconds(newPeriod);
@@ -338,6 +343,10 @@ namespace log4net.Appenders.Contrib
 				Disconnect();
 			}
 		}
+
+		private static readonly SocketError[] IgnoreSocketErrors = {
+			SocketError.TimedOut, SocketError.ConnectionRefused
+		};
 
 		void Disconnect()
 		{
@@ -378,6 +387,11 @@ namespace log4net.Appenders.Contrib
 					_socket = null;
 				}
 			}
+		}
+
+		static bool IsConnected(Socket socket)
+		{
+			return !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
 		}
 
 		public void Dispose()
@@ -459,7 +473,6 @@ namespace log4net.Appenders.Contrib
 
 		private readonly Queue<string> _messageQueue = new Queue<string>();
 		private readonly object _sync = new object();
-		private readonly object _sendingSync = new object();
 
 		private readonly Thread _senderThread;
 
