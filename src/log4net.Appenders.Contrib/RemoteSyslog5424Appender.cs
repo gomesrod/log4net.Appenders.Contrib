@@ -453,8 +453,9 @@ namespace log4net.Appenders.Contrib
 			base.OnClose();
 		}
 
-		void LogDiagnosticError(string message)
+		void LogDiagnosticError(string format, params object[] args)
 		{
+			var message = string.Format(format, args);
 			if (_closing)
 				Trace.WriteLine(message);
 			else
@@ -466,8 +467,9 @@ namespace log4net.Appenders.Contrib
 			LogDiagnosticError(exc.ToString());
 		}
 
-		void LogDiagnosticInfo(string message)
+		void LogDiagnosticInfo(string format, params object[] args)
 		{
+			var message = string.Format(format, args);
 			if (_closing)
 				Trace.WriteLine(message);
 			else
@@ -477,8 +479,9 @@ namespace log4net.Appenders.Contrib
 		public static void Flush(string appenderName)
 		{
 			var hierarchy = (Hierarchy)LogManager.GetRepository();
-			var appender = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
-			((RemoteSyslog5424Appender)appender).SendMessages();
+			var temp = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
+			var appender = (RemoteSyslog5424Appender)temp;
+			appender.SendMessages();
 		}
 
 		private Socket _socket;
