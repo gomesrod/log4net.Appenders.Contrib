@@ -225,7 +225,7 @@ namespace log4net.Appenders.Contrib
 			if (_disposed)
 				throw new ObjectDisposedException(GetType().FullName);
 
-			lock (_initSync)
+			lock (_connectionSync)
 			{
 				if (_socket != null)
 					return;
@@ -309,7 +309,7 @@ namespace log4net.Appenders.Contrib
 					EnsureConnected();
 
 					TextWriter writer;
-					lock (_initSync)
+					lock (_connectionSync)
 					{
 						if (_socket == null || _writer == null)
 							return;
@@ -385,7 +385,7 @@ namespace log4net.Appenders.Contrib
 
 		void Disconnect()
 		{
-			lock (_initSync)
+			lock (_connectionSync)
 			{
 				if (_writer != null)
 				{
@@ -510,7 +510,7 @@ namespace log4net.Appenders.Contrib
 
 		private readonly Queue<string> _messageQueue = new Queue<string>();
 
-		private readonly object _initSync = new object();
+		private readonly object _connectionSync = new object();
 		private readonly object _sendingSync = new object();
 
 		private readonly Thread _senderThread;
