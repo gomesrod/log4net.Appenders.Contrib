@@ -281,7 +281,7 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
-				Flush();
+				SendMessages();
 			}
 			catch (ThreadInterruptedException)
 			{
@@ -298,7 +298,7 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
-		public void Flush()
+		void SendMessages()
 		{
 			lock (_initSync)
 			{
@@ -467,7 +467,7 @@ namespace log4net.Appenders.Contrib
 		{
 			var hierarchy = (Hierarchy)LogManager.GetRepository();
 			var appender = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
-			((RemoteSyslog5424Appender)appender).Flush();
+			((RemoteSyslog5424Appender)appender).SendMessages();
 		}
 
 		private Socket _socket;
