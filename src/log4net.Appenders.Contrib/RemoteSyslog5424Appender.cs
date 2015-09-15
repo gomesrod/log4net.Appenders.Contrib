@@ -364,11 +364,19 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
-		public void Flush()
+		public void Flush(double maxTimeSecs = 10)
 		{
-			LogDiagnosticInfo("Flush {0}", Name);
+			LogDiagnosticInfo("Flush {0}({1})", Name, maxTimeSecs);
 
-			SendMessages();
+			var thread = new Thread(TrySendMessages);
+			thread.Start();
+
+			if (!thread.Join(TimeSpan.FromSeconds(maxTimeSecs)))
+			{
+				thread.Interrupt();
+				if (!thread.Join(TimeSpan.FromSeconds(0.1)))
+					thread.Abort();
+			}
 		}
 
 		private static readonly SocketError[] IgnoreSocketErrors = {
@@ -483,12 +491,12 @@ namespace log4net.Appenders.Contrib
 				_log.Info(message);
 		}
 
-		public static void Flush(string appenderName)
+		public static void Flush(string appenderName, double maxTimeSecs = 10)
 		{
 			var hierarchy = (Hierarchy)LogManager.GetRepository();
 			var temp = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
 			var appender = (RemoteSyslog5424Appender)temp;
-			appender.Flush();
+			appender.Flush(maxTimeSecs);
 		}
 
 		private Socket _socket;
