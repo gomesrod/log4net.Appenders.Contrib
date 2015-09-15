@@ -152,7 +152,7 @@ namespace log4net.Appenders.Contrib
 				var sourceMessage = RenderLoggingEvent(loggingEvent);
 				var frame = FormatMessage(sourceMessage, loggingEvent.Level, structuredData);
 
-				lock (_sync)
+				lock (_messageQueue)
 				{
 					if (_messageQueue.Count == MaxQueueSize - 1)
 					{
@@ -311,7 +311,7 @@ namespace log4net.Appenders.Contrib
 					{
 						string frame;
 
-						lock (_sync)
+						lock (_messageQueue)
 						{
 							if (_messageQueue.Count == 0)
 								break;
