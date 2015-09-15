@@ -119,6 +119,7 @@ namespace log4net.Appenders.Contrib
 		public override void ActivateOptions()
 		{
 			base.ActivateOptions();
+			Thread.MemoryBarrier();
 			_senderThread.Start();
 		}
 
