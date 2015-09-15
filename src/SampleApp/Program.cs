@@ -37,7 +37,6 @@ namespace log4net.Appenders.Contrib.SampleApp
 
 					logJson.Error(
 						new {
-							type = "json",
 							Message = message,
 							Id = id,
 						});
