@@ -302,9 +302,20 @@ namespace log4net.Appenders.Contrib
 		{
 			lock (_sendingSync)
 			{
+				Socket socket = null;
+
 				try
 				{
 					EnsureConnected();
+
+					TextWriter writer;
+					lock (_initSync)
+					{
+						if (_socket == null || _writer == null)
+							return;
+						socket = _socket;
+						writer = _writer;
+					}
 
 					_sendingPeriod = _defaultSendingPeriod;
 
@@ -319,8 +330,8 @@ namespace log4net.Appenders.Contrib
 							frame = _messageQueue.Peek();
 						}
 
-						_writer.Write(frame);
-						_writer.Flush();
+						writer.Write(frame);
+						writer.Flush();
 
 						lock (_messageQueue)
 						{
@@ -341,7 +352,7 @@ namespace log4net.Appenders.Contrib
 						LogError(exc);
 				}
 
-				if (_socket != null && IsConnected(_socket))
+				if (IsConnected(socket))
 					return;
 
 				var newPeriod = Math.Min(_sendingPeriod.TotalSeconds * 2, _maxSendingPeriod.TotalSeconds);
