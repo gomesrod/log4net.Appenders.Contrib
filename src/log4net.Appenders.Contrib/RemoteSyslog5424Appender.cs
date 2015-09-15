@@ -104,6 +104,14 @@ namespace log4net.Appenders.Contrib
 		private string _messageId;
 
 		// NOTE see https://tools.ietf.org/html/rfc5424#section-7.2.2
+		public string StructuredDataId
+		{
+			get { return _structuredDataId ?? "fields"; }
+			set { _structuredDataId = value; }
+		}
+
+		private string _structuredDataId;
+
 		public string EnterpriseId
 		{
 			get { return _enterpriseId ?? "0"; }
@@ -144,7 +152,7 @@ namespace log4net.Appenders.Contrib
 				{
 					var fieldsText = string.Join(" ",
 						Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
-					structuredData = string.Format("[fields@{0} {1}] ", EnterpriseId, fieldsText);
+					structuredData = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
 				}
 
 				var sourceMessage = RenderLoggingEvent(loggingEvent);
@@ -227,10 +235,10 @@ namespace log4net.Appenders.Contrib
 				if (_socket != null)
 					return;
 
-				_socket = new Socket(SocketType.Stream, ProtocolType.IP);
-				_socket.Connect(Server, Port);
+				var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+				socket.Connect(Server, Port);
 
-				var rawStream = new NetworkStream(_socket);
+				var rawStream = new NetworkStream(socket);
 
 				_stream = new SslStream(rawStream, false, VerifyServerCertificate);
 				var certificate = (string.IsNullOrEmpty(CertificatePath))
@@ -240,6 +248,8 @@ namespace log4net.Appenders.Contrib
 				_stream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
 
 				_writer = new StreamWriter(_stream, Encoding.UTF8);
+
+				_socket = socket;
 			}
 		}
 
@@ -295,7 +305,7 @@ namespace log4net.Appenders.Contrib
 
 		public void Flush()
 		{
-			lock (_sendingSync)
+			lock (_initSync)
 			{
 				try
 				{
@@ -327,7 +337,7 @@ namespace log4net.Appenders.Contrib
 				}
 				catch (SocketException exc)
 				{
-					if (exc.SocketErrorCode != SocketError.TimedOut)
+					if (!IgnoreSocketErrors.Contains(exc.SocketErrorCode))
 						LogError(exc);
 				}
 				catch (IOException exc)
@@ -336,14 +346,21 @@ namespace log4net.Appenders.Contrib
 						LogError(exc);
 				}
 
+				if (_socket != null && IsConnected(_socket))
+					return;
+
 				var newPeriod = Math.Min(_sendingPeriod.TotalSeconds * 2, _maxSendingPeriod.TotalSeconds);
 				_sendingPeriod = TimeSpan.FromSeconds(newPeriod);
 
-				_log.Info(string.Format("Connection to the server lost. Re-try in {0} seconds.", newPeriod));
+				LogDiagnosticInfo(string.Format("Connection to the server lost. Re-try in {0} seconds.", newPeriod));
 
 				Disconnect();
 			}
 		}
+
+		private static readonly SocketError[] IgnoreSocketErrors = {
+			SocketError.TimedOut, SocketError.ConnectionRefused
+		};
 
 		void Disconnect()
 		{
@@ -386,6 +403,11 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
+		static bool IsConnected(Socket socket)
+		{
+			return !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
+		}
+
 		public void Dispose()
 		{
 			try
@@ -425,12 +447,25 @@ namespace log4net.Appenders.Contrib
 			base.OnClose();
 		}
 
-		void LogError(Exception exc)
+		void LogDiagnosticError(string message)
 		{
 			if (_closing)
-				Trace.WriteLine(exc);
+				Trace.WriteLine(message);
 			else
-				_log.Error(exc);
+				_log.Error(message);
+		}
+
+		void LogError(Exception exc)
+		{
+			LogDiagnosticError(exc.ToString());
+		}
+
+		void LogDiagnosticInfo(string message)
+		{
+			if (_closing)
+				Trace.WriteLine(message);
+			else
+				_log.Info(message);
 		}
 
 		public static void Flush(string appenderName)
@@ -463,7 +498,6 @@ namespace log4net.Appenders.Contrib
 
 		private readonly Queue<string> _messageQueue = new Queue<string>();
 		private readonly object _sync = new object();
-		private readonly object _sendingSync = new object();
 
 		private readonly Thread _senderThread;
 

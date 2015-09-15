@@ -24,14 +24,21 @@ namespace log4net.Appenders.Contrib.SampleApp
 
 				var logs = new List<string>
 				{
-					"I’m broken. Please show this to someone who can fix can fix",
+					"I'm broken. Please show this to someone who can fix me.",
 					"An error has occured on the error logging device.",
 					"Error ocurred when attempting to print error message."
 				};
 
 				for (var i = 0; i < 3; i++)
 				{
-					log.ErrorFormat("{0} ({1}_{2})", logs[i], i, Guid.NewGuid());
+					var id = string.Format("{0}_{1}", i, Guid.NewGuid());
+
+					log.Error(
+						new {
+							type = "json",
+							Message = logs[i] + "_" + id,
+							Id = id,
+						});
 				}
 
 				Console.WriteLine("\n\nPress a key to exit.");
