@@ -364,6 +364,13 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
+		public void Flush()
+		{
+			LogDiagnosticInfo("Flush {0}", Name);
+
+			SendMessages();
+		}
+
 		private static readonly SocketError[] IgnoreSocketErrors = {
 			SocketError.TimedOut, SocketError.ConnectionRefused
 		};
@@ -481,7 +488,7 @@ namespace log4net.Appenders.Contrib
 			var hierarchy = (Hierarchy)LogManager.GetRepository();
 			var temp = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
 			var appender = (RemoteSyslog5424Appender)temp;
-			appender.SendMessages();
+			appender.Flush();
 		}
 
 		private Socket _socket;
