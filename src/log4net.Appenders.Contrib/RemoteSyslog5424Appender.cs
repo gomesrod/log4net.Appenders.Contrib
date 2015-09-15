@@ -300,7 +300,7 @@ namespace log4net.Appenders.Contrib
 
 		void SendMessages()
 		{
-			lock (_initSync)
+			lock (_sendingSync)
 			{
 				try
 				{
@@ -476,12 +476,13 @@ namespace log4net.Appenders.Contrib
 
 		private volatile bool _disposed;
 		private volatile bool _closing;
-		private readonly object _initSync = new object();
 
 		private readonly ILog _log = LogManager.GetLogger("RemoteSyslog5424AppenderDiagLogger");
 
 		private readonly Queue<string> _messageQueue = new Queue<string>();
-		private readonly object _sync = new object();
+
+		private readonly object _initSync = new object();
+		private readonly object _sendingSync = new object();
 
 		private readonly Thread _senderThread;
 
