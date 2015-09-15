@@ -15,7 +15,8 @@ namespace log4net.Appenders.Contrib.SampleApp
 			{
 				XmlConfigurator.Configure();
 
-				var log = LogManager.GetLogger(typeof(Program));
+				var logJson = LogManager.GetLogger("RemoteSyslog5424_Json");
+				var logPlain = LogManager.GetLogger("RemoteSyslog5424_Plain");
 
 				AppDomain.CurrentDomain.UnhandledException +=
 					(sender, eventArgs) => Console.WriteLine(eventArgs.ExceptionObject.ToString());
@@ -32,19 +33,23 @@ namespace log4net.Appenders.Contrib.SampleApp
 				for (var i = 0; i < 3; i++)
 				{
 					var id = string.Format("{0}_{1}", i, Guid.NewGuid());
+					var message = logs[i] + " " + id;
 
-					log.Error(
+					logJson.Error(
 						new {
 							type = "json",
-							Message = logs[i] + " " + id,
+							Message = message,
 							Id = id,
 						});
+
+					logPlain.Error(message);
 				}
 
 				Console.WriteLine("\n\nPress a key to exit.");
 				Console.ReadKey();
 
-				RemoteSyslog5424Appender.Flush("RemoteAppender");
+				RemoteSyslog5424Appender.Flush("RemoteAppenderJson");
+				RemoteSyslog5424Appender.Flush("RemoteAppenderPlain");
 			}
 			catch (Exception exc)
 			{
