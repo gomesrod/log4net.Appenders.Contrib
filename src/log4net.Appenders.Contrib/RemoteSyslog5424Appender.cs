@@ -119,8 +119,16 @@ namespace log4net.Appenders.Contrib
 		public override void ActivateOptions()
 		{
 			base.ActivateOptions();
-			Thread.MemoryBarrier();
-			_senderThread.Start();
+
+			try
+			{
+				Thread.MemoryBarrier();
+				_senderThread.Start();
+			}
+			catch (Exception exc)
+			{
+				ErrorHandler.Error(exc.ToString());
+			}
 		}
 
 		public void AddField(string text)
