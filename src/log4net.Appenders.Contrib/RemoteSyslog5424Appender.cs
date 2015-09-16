@@ -140,6 +140,9 @@ namespace log4net.Appenders.Contrib
 
 		protected override void Append(LoggingEvent loggingEvent)
 		{
+			if (_disposed)
+				throw new ObjectDisposedException(GetType().FullName);
+
 			try
 			{
 				var structuredData = "";
