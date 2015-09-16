@@ -471,7 +471,7 @@ namespace log4net.Appenders.Contrib
 			base.OnClose();
 		}
 
-		void LogDiagnosticError(string format, params object[] args)
+		void LogError(string format, params object[] args)
 		{
 			var message = string.Format(format, args);
 			if (_closing)
@@ -482,7 +482,7 @@ namespace log4net.Appenders.Contrib
 
 		void LogError(Exception exc)
 		{
-			LogDiagnosticError(exc.ToString());
+			LogError(exc.ToString());
 		}
 
 		void LogDiagnosticInfo(string format, params object[] args)
