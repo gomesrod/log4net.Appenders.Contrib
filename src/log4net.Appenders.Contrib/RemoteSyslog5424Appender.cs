@@ -119,6 +119,14 @@ namespace log4net.Appenders.Contrib
 
 		public int MaxQueueSize = 1024 * 1024;
 
+		public bool EnableRemoteDiagnosticInfo
+		{
+			get { return _enableRemoteDiagnosticInfo; }
+			set { _enableRemoteDiagnosticInfo = value; }
+		}
+
+		private volatile bool _enableRemoteDiagnosticInfo = true;
+
 		public void AddField(string text)
 		{
 			var parts = text.Split('=');
@@ -496,6 +504,8 @@ namespace log4net.Appenders.Contrib
 				Trace.WriteLine(message);
 			else
 				_log.Error(message);
+
+			RemoteLog(message, Level.Error);
 		}
 
 		void LogError(Exception exc)
@@ -510,6 +520,21 @@ namespace log4net.Appenders.Contrib
 				Trace.WriteLine(message);
 			else
 				_log.Info(message);
+
+			RemoteLog(message, Level.Info);
+		}
+
+		private void RemoteLog(string message, Level level)
+		{
+			if (EnableRemoteDiagnosticInfo)
+			{
+				lock (_messageQueue)
+				{
+					var loggingEvent = CreateLoggingEvent(message, level);
+					var renderedMessage = FormatMessage(loggingEvent);
+					_messageQueue.Enqueue(renderedMessage);
+				}
+			}
 		}
 
 		public static void Flush(string appenderName, double maxTimeSecs = 10)
