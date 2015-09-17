@@ -139,17 +139,7 @@ namespace log4net.Appenders.Contrib
 
 			try
 			{
-				var sourceMessage = RenderLoggingEvent(loggingEvent);
-
-				var structuredData = "";
-				if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
-				{
-					var fieldsText = string.Join(" ",
-						Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
-					structuredData = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
-				}
-
-				var frame = FormatMessage(sourceMessage, loggingEvent.Level, structuredData);
+				var frame = FormatMessage(loggingEvent);
 
 				lock (_messageQueue)
 				{
@@ -182,6 +172,21 @@ namespace log4net.Appenders.Contrib
 				message += TrailerChar;
 			var frame = string.Format("{0} {1}", message.Length, message);
 			return frame;
+		}
+
+		private string FormatMessage(LoggingEvent val)
+		{
+			var message = RenderLoggingEvent(val);
+
+			var structuredData = "";
+			if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
+			{
+				var fieldsText = string.Join(" ",
+					Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
+				structuredData = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
+			}
+
+			return FormatMessage(message, val.Level, structuredData);
 		}
 
 		// Priority generation in RFC 5424 seems to be the same as in RFC 3164
