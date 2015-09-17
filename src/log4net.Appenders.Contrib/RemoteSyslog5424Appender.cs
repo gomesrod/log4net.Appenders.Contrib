@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -144,7 +145,13 @@ namespace log4net.Appenders.Contrib
 				lock (_messageQueue)
 				{
 					if ((_senderThread.ThreadState & ThreadState.Unstarted) != 0)
+					{
 						_senderThread.Start();
+
+						var message = string.Format("Starting '{0}' '{1}", Assembly.GetEntryAssembly().FullName,
+							Assembly.GetExecutingAssembly().FullName);
+						LogDiagnosticInfo(message);
+					}
 
 					if (_messageQueue.Count == MaxQueueSize - 1)
 					{
