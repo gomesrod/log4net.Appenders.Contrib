@@ -139,6 +139,8 @@ namespace log4net.Appenders.Contrib
 
 			try
 			{
+				var sourceMessage = RenderLoggingEvent(loggingEvent);
+
 				var structuredData = "";
 				if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
 				{
@@ -147,7 +149,6 @@ namespace log4net.Appenders.Contrib
 					structuredData = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
 				}
 
-				var sourceMessage = RenderLoggingEvent(loggingEvent);
 				var frame = FormatMessage(sourceMessage, loggingEvent.Level, structuredData);
 
 				lock (_messageQueue)
