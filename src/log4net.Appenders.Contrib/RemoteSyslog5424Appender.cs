@@ -166,7 +166,7 @@ namespace log4net.Appenders.Contrib
 					{
 						var warningMessage = string.Format(
 							"Message queue size ({0}) is exceeded. Not sending new messages until the queue backlog has been sent.", MaxQueueSize);
-						_messageQueue.Enqueue(FormatMessage(CreateLoggingEvent(warningMessage, Level.Warn)));
+						LogDiagnosticInfo(warningMessage, Level.Warn);
 					}
 					if (_messageQueue.Count >= MaxQueueSize)
 						return;
