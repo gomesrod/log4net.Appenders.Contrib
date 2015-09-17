@@ -157,7 +157,9 @@ namespace log4net.Appenders.Contrib
 					{
 						_senderThread.Start();
 
-						var message = string.Format("Starting '{0}' '{1}", Assembly.GetEntryAssembly().FullName,
+						var entryAssembly = Assembly.GetEntryAssembly();
+						var message = string.Format("Starting '{0}' '{1}",
+							(entryAssembly != null) ? Assembly.GetEntryAssembly().FullName : Process.GetCurrentProcess().MainModule.FileName,
 							Assembly.GetExecutingAssembly().FullName);
 						LogDiagnosticInfo(message);
 					}
