@@ -156,12 +156,7 @@ namespace log4net.Appenders.Contrib
 					if ((_senderThread.ThreadState & ThreadState.Unstarted) != 0)
 					{
 						_senderThread.Start();
-
-						var entryAssembly = Assembly.GetEntryAssembly();
-						var message = string.Format("Starting '{0}' '{1}",
-							(entryAssembly != null) ? Assembly.GetEntryAssembly().FullName : Process.GetCurrentProcess().MainModule.FileName,
-							Assembly.GetExecutingAssembly().FullName);
-						LogDiagnosticInfo(message);
+						LogStartupInfo();
 					}
 
 					if (_messageQueue.Count == MaxQueueSize - 1)
@@ -545,6 +540,15 @@ namespace log4net.Appenders.Contrib
 			var temp = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
 			var appender = (RemoteSyslog5424Appender)temp;
 			appender.Flush(maxTimeSecs);
+		}
+
+		private void LogStartupInfo()
+		{
+			var entryAssembly = Assembly.GetEntryAssembly();
+			var message = string.Format("Starting '{0}' '{1}",
+				(entryAssembly != null) ? Assembly.GetEntryAssembly().FullName : Process.GetCurrentProcess().MainModule.FileName,
+				Assembly.GetExecutingAssembly().FullName);
+			LogDiagnosticInfo(message);
 		}
 
 		private Socket _socket;
