@@ -353,7 +353,7 @@ namespace log4net.Appenders.Contrib
 						LogError(exc);
 				}
 
-				if (IsConnected(socket))
+				if (socket != null && IsConnected(socket))
 					return;
 
 				var newPeriod = Math.Min(_sendingPeriod.TotalSeconds * 2, _maxSendingPeriod.TotalSeconds);
