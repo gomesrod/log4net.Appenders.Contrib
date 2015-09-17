@@ -10,6 +10,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
+using ThreadState = System.Threading.ThreadState;
 
 using log4net.Appender;
 using log4net.Core;
@@ -116,21 +117,6 @@ namespace log4net.Appenders.Contrib
 
 		public int MaxQueueSize = 1024 * 1024;
 
-		public override void ActivateOptions()
-		{
-			base.ActivateOptions();
-
-			try
-			{
-				Thread.MemoryBarrier();
-				_senderThread.Start();
-			}
-			catch (Exception exc)
-			{
-				ErrorHandler.Error(exc.ToString());
-			}
-		}
-
 		public void AddField(string text)
 		{
 			var parts = text.Split('=');
@@ -166,6 +152,9 @@ namespace log4net.Appenders.Contrib
 
 				lock (_messageQueue)
 				{
+					if ((_senderThread.ThreadState & ThreadState.Unstarted) != 0)
+						_senderThread.Start();
+
 					if (_messageQueue.Count == MaxQueueSize - 1)
 					{
 						var warningMessage = string.Format("Message queue size ({0}) is exceeded. Not sending new messages until the queue backlog has been sent.", MaxQueueSize);
