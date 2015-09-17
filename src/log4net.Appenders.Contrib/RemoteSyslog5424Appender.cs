@@ -158,7 +158,7 @@ namespace log4net.Appenders.Contrib
 					{
 						var warningMessage = string.Format(
 							"Message queue size ({0}) is exceeded. Not sending new messages until the queue backlog has been sent.", MaxQueueSize);
-						_messageQueue.Enqueue(FormatMessage(warningMessage, Level.Warn));
+						_messageQueue.Enqueue(FormatMessage(CreateLoggingEvent(warningMessage, Level.Warn)));
 					}
 					if (_messageQueue.Count >= MaxQueueSize)
 						return;
@@ -195,6 +195,12 @@ namespace log4net.Appenders.Contrib
 			}
 
 			return FormatMessage(message, val.Level, structuredData);
+		}
+
+		private LoggingEvent CreateLoggingEvent(string message, Level level)
+		{
+			var res = new LoggingEvent(GetType(), _log.Logger.Repository, _log.Logger.Name, level, message, null);
+			return res;
 		}
 
 		// Priority generation in RFC 5424 seems to be the same as in RFC 3164
