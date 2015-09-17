@@ -14,6 +14,7 @@ using System.Threading;
 using ThreadState = System.Threading.ThreadState;
 
 using log4net.Appender;
+using log4net.Appenders.Contrib.Converters;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
 using SyslogFacility = log4net.Appender.RemoteSyslogAppender.SyslogFacility;
@@ -172,7 +173,7 @@ namespace log4net.Appenders.Contrib
 
 		private string FormatMessage(string sourceMessage, Level level, string structuredData = "")
 		{
-			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
+			var time = Iso8601DatePatternConverter.FormatString(DateTime.UtcNow);
 			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
 				GeneratePriority(level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
 			if (TrailerChar != null)
