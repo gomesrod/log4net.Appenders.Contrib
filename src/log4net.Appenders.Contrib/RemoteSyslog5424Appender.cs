@@ -392,7 +392,7 @@ namespace log4net.Appenders.Contrib
 
 		public void Flush(double maxTimeSecs = 10)
 		{
-			LogDiagnosticInfo("Flush {0}({1})", Name, maxTimeSecs);
+			LogDiagnosticInfo("RemoteSyslog5424Appender.Flush({0}, {1})", Name, maxTimeSecs);
 
 			var thread = new Thread(TrySendMessages);
 			thread.Start();
@@ -459,6 +459,8 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
+				LogDiagnosticInfo("RemoteSyslog5424Appender.Dispose()");
+
 				_closing = true;
 
 				// give the sender thread some time to flush the messages
@@ -490,6 +492,7 @@ namespace log4net.Appenders.Contrib
 		{
 			// note that total time for all AppDomain.ProcessExit handlers is limited by runtime, 2 seconds by default
 			// https://msdn.microsoft.com/en-us/library/system.appdomain.processexit(v=vs.110).aspx
+			LogDiagnosticInfo("RemoteSyslog5424Appender.OnClose()");
 			Dispose();
 			base.OnClose();
 		}
