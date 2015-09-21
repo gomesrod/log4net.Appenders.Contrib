@@ -512,13 +512,20 @@ namespace log4net.Appenders.Contrib
 
 		void LogDiagnosticInfo(string format, params object[] args)
 		{
-			var message = string.Format(format, args);
-			if (_closing)
-				Trace.WriteLine(message);
-			else
-				_log.Info(message);
+			try
+			{
+				var message = string.Format(format, args);
+				if (_closing)
+					Trace.WriteLine(message);
+				else
+					_log.Info(message);
 
-			RemoteLog(message, Level.Info);
+				RemoteLog(message, Level.Info);
+			}
+			catch (Exception exc)
+			{
+				Trace.WriteLine(exc.ToString());
+			}
 		}
 
 		private void RemoteLog(string message, Level level)
