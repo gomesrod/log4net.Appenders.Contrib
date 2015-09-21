@@ -6,12 +6,15 @@ using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
+using ThreadState = System.Threading.ThreadState;
 
 using log4net.Appender;
+using log4net.Appenders.Contrib.Converters;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
 using SyslogFacility = log4net.Appender.RemoteSyslogAppender.SyslogFacility;
@@ -116,11 +119,13 @@ namespace log4net.Appenders.Contrib
 
 		public int MaxQueueSize = 1024 * 1024;
 
-		public override void ActivateOptions()
+		public bool EnableRemoteDiagnosticInfo
 		{
-			base.ActivateOptions();
-			_senderThread.Start();
+			get { return _enableRemoteDiagnosticInfo; }
+			set { _enableRemoteDiagnosticInfo = value; }
 		}
+
+		private volatile bool _enableRemoteDiagnosticInfo = true;
 
 		public void AddField(string text)
 		{
@@ -139,25 +144,26 @@ namespace log4net.Appenders.Contrib
 
 		protected override void Append(LoggingEvent loggingEvent)
 		{
+			if (_disposed)
+				throw new ObjectDisposedException(GetType().FullName);
+
 			try
 			{
-				var structuredData = "";
-				if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
-				{
-					var fieldsText = string.Join(" ",
-						Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
-					structuredData = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
-				}
+				var frame = FormatMessage(loggingEvent);
 
-				var sourceMessage = RenderLoggingEvent(loggingEvent);
-				var frame = FormatMessage(sourceMessage, loggingEvent.Level, structuredData);
-
-				lock (_sync)
+				lock (_messageQueue)
 				{
+					if ((_senderThread.ThreadState & ThreadState.Unstarted) != 0)
+					{
+						_senderThread.Start();
+						LogStartupInfo();
+					}
+
 					if (_messageQueue.Count == MaxQueueSize - 1)
 					{
-						var warningMessage = string.Format("Message queue size ({0}) is exceeded. Not sending new messages until the queue backlog has been sent.", MaxQueueSize);
-						_messageQueue.Enqueue(FormatMessage(warningMessage, Level.Warn));
+						var warningMessage = string.Format(
+							"Message queue size ({0}) is exceeded. Not sending new messages until the queue backlog has been sent.", MaxQueueSize);
+						LogDiagnosticInfo(warningMessage, Level.Warn);
 					}
 					if (_messageQueue.Count >= MaxQueueSize)
 						return;
@@ -172,13 +178,34 @@ namespace log4net.Appenders.Contrib
 
 		private string FormatMessage(string sourceMessage, Level level, string structuredData = "")
 		{
-			var time = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ");
+			var time = Iso8601DatePatternConverter.FormatString(DateTime.UtcNow);
 			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
 				GeneratePriority(level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
 			if (TrailerChar != null)
 				message += TrailerChar;
 			var frame = string.Format("{0} {1}", message.Length, message);
 			return frame;
+		}
+
+		private string FormatMessage(LoggingEvent val)
+		{
+			var message = RenderLoggingEvent(val);
+
+			var structuredData = "";
+			if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
+			{
+				var fieldsText = string.Join(" ",
+					Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
+				structuredData = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
+			}
+
+			return FormatMessage(message, val.Level, structuredData);
+		}
+
+		private LoggingEvent CreateLoggingEvent(string message, Level level)
+		{
+			var res = new LoggingEvent(GetType(), _log.Logger.Repository, _log.Logger.Name, level, message, null);
+			return res;
 		}
 
 		// Priority generation in RFC 5424 seems to be the same as in RFC 3164
@@ -224,7 +251,7 @@ namespace log4net.Appenders.Contrib
 			if (_disposed)
 				throw new ObjectDisposedException(GetType().FullName);
 
-			lock (_initSync)
+			lock (_connectionSync)
 			{
 				if (_socket != null)
 					return;
@@ -280,7 +307,7 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
-				Flush();
+				SendMessages();
 			}
 			catch (ThreadInterruptedException)
 			{
@@ -297,13 +324,24 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
-		public void Flush()
+		void SendMessages()
 		{
-			lock (_initSync)
+			lock (_sendingSync)
 			{
+				Socket socket = null;
+
 				try
 				{
 					EnsureConnected();
+
+					TextWriter writer;
+					lock (_connectionSync)
+					{
+						if (_socket == null || _writer == null)
+							return;
+						socket = _socket;
+						writer = _writer;
+					}
 
 					_sendingPeriod = _defaultSendingPeriod;
 
@@ -311,15 +349,15 @@ namespace log4net.Appenders.Contrib
 					{
 						string frame;
 
-						lock (_sync)
+						lock (_messageQueue)
 						{
 							if (_messageQueue.Count == 0)
 								break;
 							frame = _messageQueue.Peek();
 						}
 
-						_writer.Write(frame);
-						_writer.Flush();
+						writer.Write(frame);
+						writer.Flush();
 
 						lock (_messageQueue)
 						{
@@ -340,7 +378,7 @@ namespace log4net.Appenders.Contrib
 						LogError(exc);
 				}
 
-				if (_socket != null && IsConnected(_socket))
+				if (socket != null && IsConnected(socket))
 					return;
 
 				var newPeriod = Math.Min(_sendingPeriod.TotalSeconds * 2, _maxSendingPeriod.TotalSeconds);
@@ -352,13 +390,28 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
+		public void Flush(double maxTimeSecs = 10)
+		{
+			LogDiagnosticInfo("RemoteSyslog5424Appender.Flush({0}, {1})", Name, maxTimeSecs);
+
+			var thread = new Thread(TrySendMessages);
+			thread.Start();
+
+			if (!thread.Join(TimeSpan.FromSeconds(maxTimeSecs)))
+			{
+				thread.Interrupt();
+				if (!thread.Join(TimeSpan.FromSeconds(0.1)))
+					thread.Abort();
+			}
+		}
+
 		private static readonly SocketError[] IgnoreSocketErrors = {
 			SocketError.TimedOut, SocketError.ConnectionRefused
 		};
 
 		void Disconnect()
 		{
-			lock (_initSync)
+			lock (_connectionSync)
 			{
 				if (_writer != null)
 				{
@@ -406,6 +459,8 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
+				LogDiagnosticInfo("RemoteSyslog5424Appender.Dispose()");
+
 				_closing = true;
 
 				// give the sender thread some time to flush the messages
@@ -437,36 +492,73 @@ namespace log4net.Appenders.Contrib
 		{
 			// note that total time for all AppDomain.ProcessExit handlers is limited by runtime, 2 seconds by default
 			// https://msdn.microsoft.com/en-us/library/system.appdomain.processexit(v=vs.110).aspx
+			LogDiagnosticInfo("RemoteSyslog5424Appender.OnClose()");
 			Dispose();
 			base.OnClose();
 		}
 
-		void LogDiagnosticError(string message)
+		void LogError(string format, params object[] args)
 		{
+			var message = string.Format(format, args);
 			if (_closing)
 				Trace.WriteLine(message);
 			else
 				_log.Error(message);
+
+			RemoteLog(message, Level.Error);
 		}
 
 		void LogError(Exception exc)
 		{
-			LogDiagnosticError(exc.ToString());
+			LogError(exc.ToString());
 		}
 
-		void LogDiagnosticInfo(string message)
+		void LogDiagnosticInfo(string format, params object[] args)
 		{
-			if (_closing)
-				Trace.WriteLine(message);
-			else
-				_log.Info(message);
+			try
+			{
+				var message = string.Format(format, args);
+				if (_closing)
+					Trace.WriteLine(message);
+				else
+					_log.Info(message);
+
+				RemoteLog(message, Level.Info);
+			}
+			catch (Exception exc)
+			{
+				Trace.WriteLine(exc.ToString());
+			}
 		}
 
-		public static void Flush(string appenderName)
+		private void RemoteLog(string message, Level level)
+		{
+			if (EnableRemoteDiagnosticInfo)
+			{
+				lock (_messageQueue)
+				{
+					var loggingEvent = CreateLoggingEvent(message, level);
+					var renderedMessage = FormatMessage(loggingEvent);
+					_messageQueue.Enqueue(renderedMessage);
+				}
+			}
+		}
+
+		public static void Flush(string appenderName, double maxTimeSecs = 10)
 		{
 			var hierarchy = (Hierarchy)LogManager.GetRepository();
-			var appender = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
-			((RemoteSyslog5424Appender)appender).Flush();
+			var temp = hierarchy.GetAppenders().First(cur => cur.Name == appenderName);
+			var appender = (RemoteSyslog5424Appender)temp;
+			appender.Flush(maxTimeSecs);
+		}
+
+		private void LogStartupInfo()
+		{
+			var entryAssembly = Assembly.GetEntryAssembly();
+			var message = string.Format("Starting '{0}' '{1}",
+				(entryAssembly != null) ? Assembly.GetEntryAssembly().FullName : Process.GetCurrentProcess().MainModule.FileName,
+				Assembly.GetExecutingAssembly().FullName);
+			LogDiagnosticInfo(message);
 		}
 
 		private Socket _socket;
@@ -475,12 +567,13 @@ namespace log4net.Appenders.Contrib
 
 		private volatile bool _disposed;
 		private volatile bool _closing;
-		private readonly object _initSync = new object();
 
 		private readonly ILog _log = LogManager.GetLogger("RemoteSyslog5424AppenderDiagLogger");
 
 		private readonly Queue<string> _messageQueue = new Queue<string>();
-		private readonly object _sync = new object();
+
+		private readonly object _connectionSync = new object();
+		private readonly object _sendingSync = new object();
 
 		private readonly Thread _senderThread;
 
