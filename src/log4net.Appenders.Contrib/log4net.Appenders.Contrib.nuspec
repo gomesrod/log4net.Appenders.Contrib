@@ -10,6 +10,7 @@
 	<copyright>Copyright 2015</copyright>
 	<dependencies>
 	 <dependency id="log4net" version="1.2.13.0" />
+	 <dependency id="Newtonsoft.Json" version="7.0.1" />
 	</dependencies>
  </metadata>
  <files>
