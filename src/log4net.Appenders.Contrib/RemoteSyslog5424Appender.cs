@@ -575,8 +575,8 @@ namespace log4net.Appenders.Contrib
 				return val;
 
 			var ch = TrailerChar.Value;
-			if (ch == '\n')
-				return val.Replace("\n", "\\n");
+			if (ch == '\r' || ch == '\n')
+				return val.Replace("\r", "\\r").Replace("\n", "\\n");
 			return val.Replace(new string(ch, 1), string.Format("\\u{0}", ((int)ch).ToString("X4")));
 		}
 
