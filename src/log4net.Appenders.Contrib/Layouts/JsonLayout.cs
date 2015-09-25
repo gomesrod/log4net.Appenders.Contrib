@@ -15,7 +15,7 @@ namespace log4net.Appenders.Contrib.Layouts
 	{
 		public JsonLayout()
 		{
-			ConversionPattern = "{%event_as_json}%n";
+			ConversionPattern = "{%event_as_json}";
 			IgnoresException = false;
 
 			AddConverter(new ConverterInfo { Name = "event_as_json", Type = typeof(JsonFragmentPatternConverter) });
