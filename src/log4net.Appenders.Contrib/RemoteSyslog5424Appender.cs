@@ -546,11 +546,13 @@ namespace log4net.Appenders.Contrib
 				lock (_messageQueue)
 				{
 					var loggingEvent = CreateLoggingEvent(message, level);
-					var renderedMessage = FormatMessage(loggingEvent);
+					var renderedMessage = FormatMessage(loggingEvent, _diagFields);
 					_messageQueue.Enqueue(renderedMessage);
 				}
 			}
 		}
+
+		private readonly Dictionary<string, string> _diagFields = new Dictionary<string, string> { { "category", "diagnostic" } };
 
 		public static void Flush(string appenderName, double maxTimeSecs = 10)
 		{
