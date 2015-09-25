@@ -479,11 +479,13 @@ namespace log4net.Appenders.Contrib
 
 				_disposed = true;
 			}
+			catch (ThreadStateException)
+			{
+			}
 			catch (Exception exc)
 			{
 				LogError(exc);
 			}
-
 			try
 			{
 				Disconnect();
