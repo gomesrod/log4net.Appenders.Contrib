@@ -176,10 +176,10 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
-		private string FormatMessage(LoggingEvent val)
+		private string FormatMessage(LoggingEvent val, Dictionary<string, string> extraFields = null)
 		{
 			var sourceMessage = RenderLoggingEvent(val);
-			var structuredData = FormatStructuredData();
+			var structuredData = FormatStructuredData(extraFields);
 
 			var time = Iso8601DatePatternConverter.FormatString(DateTime.UtcNow);
 			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
@@ -194,12 +194,20 @@ namespace log4net.Appenders.Contrib
 		{
 			var res = "";
 			if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
-			{
-				var fieldsText = string.Join(" ",
-					Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
-				res = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
-			}
+				res = FormatStructuredFields(Fields);
+
+			if (extraFields != null && extraFields.Count > 0)
+				res += " " + FormatStructuredFields(extraFields);
+
+			if (!string.IsNullOrEmpty(res))
+				return string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, res);
+
 			return res;
+		}
+
+		private static string FormatStructuredFields(Dictionary<string, string> fields)
+		{
+			return string.Join(" ", fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
 		}
 
 		private LoggingEvent CreateLoggingEvent(string message, Level level)
