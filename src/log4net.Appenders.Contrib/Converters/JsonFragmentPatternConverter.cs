@@ -28,18 +28,19 @@ namespace log4net.Appenders.Contrib.Converters
 			}
 			else
 			{
-				var objType = loggingEvent.MessageObject.GetType();
-				if (objType != typeof(string) && objType != typeof(SystemStringFormat))
-				{
-					json = JsonConvert.SerializeObject(loggingEvent.MessageObject, Formatting.None);
-				}
-				else
+				var obj = loggingEvent.MessageObject;
+				if (obj == null || obj is string || obj is SystemStringFormat)
 				{
 					json = JsonConvert.SerializeObject(
 						new
 						{
 							Message = loggingEvent.RenderedMessage
-						}, Formatting.None);
+						},
+						Formatting.None);
+				}
+				else
+				{
+					json = JsonConvert.SerializeObject(obj, Formatting.None);
 				}
 			}
 
