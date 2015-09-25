@@ -190,16 +190,16 @@ namespace log4net.Appenders.Contrib
 			return frame;
 		}
 
-		private string FormatStructuredData()
+		private string FormatStructuredData(Dictionary<string, string> extraFields = null)
 		{
-			var structuredData = "";
+			var res = "";
 			if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
 			{
 				var fieldsText = string.Join(" ",
 					Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
-				structuredData = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
+				res = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
 			}
-			return structuredData;
+			return res;
 		}
 
 		private LoggingEvent CreateLoggingEvent(string message, Level level)
