@@ -176,21 +176,22 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
-		private string FormatMessage(string sourceMessage, Level level, string structuredData = "")
+		private string FormatMessage(LoggingEvent val)
 		{
+			var sourceMessage = RenderLoggingEvent(val);
+			var structuredData = FormatStructuredData();
+
 			var time = Iso8601DatePatternConverter.FormatString(DateTime.UtcNow);
 			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
-				GeneratePriority(level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
+				GeneratePriority(val.Level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
 			if (TrailerChar != null)
 				message += TrailerChar;
 			var frame = string.Format("{0} {1}", message.Length, message);
 			return frame;
 		}
 
-		private string FormatMessage(LoggingEvent val)
+		private string FormatStructuredData()
 		{
-			var message = RenderLoggingEvent(val);
-
 			var structuredData = "";
 			if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
 			{
@@ -198,8 +199,7 @@ namespace log4net.Appenders.Contrib
 					Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
 				structuredData = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
 			}
-
-			return FormatMessage(message, val.Level, structuredData);
+			return structuredData;
 		}
 
 		private LoggingEvent CreateLoggingEvent(string message, Level level)
