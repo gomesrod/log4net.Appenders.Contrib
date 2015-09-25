@@ -16,7 +16,12 @@ namespace log4net.Appenders.Contrib.Converters
 
 		protected override void Convert(TextWriter writer, LoggingEvent loggingEvent)
 		{
-			writer.Write(loggingEvent.TimeStamp.ToUniversalTime().ToString(Iso8601Format));
+			writer.Write(FormatString(loggingEvent.TimeStamp));
+		}
+
+		public static string FormatString(DateTime val)
+		{
+			return val.ToUniversalTime().ToString(Iso8601Format);
 		}
 	}
 }
