@@ -30,6 +30,16 @@ namespace log4net.Appenders.Contrib.SampleApp
 					"Error ocurred when attempting to print error message."
 				};
 
+				try
+				{
+					throw new ApplicationException("Test exception");
+				}
+				catch (Exception exc)
+				{
+					logJson.Error(exc);
+					logPlain.Error(exc);
+				}
+
 				for (var i = 0; i < logs.Count; i++)
 				{
 					var id = string.Format("{0}_{1}", i, Guid.NewGuid());
