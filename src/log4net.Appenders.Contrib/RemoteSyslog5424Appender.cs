@@ -11,7 +11,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
-using ThreadState = System.Threading.ThreadState;
 
 using log4net.Appender;
 using log4net.Appenders.Contrib.Converters;
@@ -142,6 +141,21 @@ namespace log4net.Appenders.Contrib
 			Fields.Add(parts[0], value);
 		}
 
+		public override void ActivateOptions()
+		{
+			base.ActivateOptions();
+
+			try
+			{
+				Thread.MemoryBarrier();
+				_senderThread.Start();
+			}
+			catch (Exception exc)
+			{
+				ErrorHandler.Error(exc.ToString());
+			}
+		}
+
 		protected override void Append(LoggingEvent loggingEvent)
 		{
 			if (_disposed)
@@ -153,12 +167,6 @@ namespace log4net.Appenders.Contrib
 
 				lock (_messageQueue)
 				{
-					if ((_senderThread.ThreadState & ThreadState.Unstarted) != 0)
-					{
-						_senderThread.Start();
-						LogStartupInfo();
-					}
-
 					if (_messageQueue.Count == MaxQueueSize - 1)
 					{
 						var warningMessage = string.Format(
@@ -291,6 +299,16 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
+				while (!_disposed)
+				{
+					if (_log.IsErrorEnabled)
+					{
+						LogStartupInfo();
+						break;
+					}
+					Thread.Yield();
+				}
+
 				while (!_disposed)
 				{
 					TrySendMessages();
