@@ -68,6 +68,12 @@ namespace log4net.Appenders.Contrib
 
 		public char? TrailerChar { get; set; }
 
+		public int TrailerCharCode
+		{
+			get { return (TrailerChar != null) ? (int)TrailerChar : 0; }
+			set { TrailerChar = (char)value;}
+		}
+
 		public string Hostname
 		{
 			get { return _hostname ?? "-"; }
@@ -181,9 +187,9 @@ namespace log4net.Appenders.Contrib
 			var time = Iso8601DatePatternConverter.FormatString(DateTime.UtcNow);
 			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
 				GeneratePriority(level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
+			var frame = string.Format("{0} {1}", message.Length, Escape(message));
 			if (TrailerChar != null)
-				message += TrailerChar;
-			var frame = string.Format("{0} {1}", message.Length, message);
+				frame += TrailerChar;
 			return frame;
 		}
 
@@ -473,11 +479,13 @@ namespace log4net.Appenders.Contrib
 
 				_disposed = true;
 			}
+			catch (ThreadStateException)
+			{
+			}
 			catch (Exception exc)
 			{
 				LogError(exc);
 			}
-
 			try
 			{
 				Disconnect();
@@ -559,6 +567,17 @@ namespace log4net.Appenders.Contrib
 				(entryAssembly != null) ? Assembly.GetEntryAssembly().FullName : Process.GetCurrentProcess().MainModule.FileName,
 				Assembly.GetExecutingAssembly().FullName);
 			LogDiagnosticInfo(message);
+		}
+
+		private string Escape(string val)
+		{
+			if (TrailerChar == null)
+				return val;
+
+			var ch = TrailerChar.Value;
+			if (ch == '\r' || ch == '\n')
+				return val.Replace("\r", "\\r").Replace("\n", "\\n");
+			return val.Replace(new string(ch, 1), string.Format("\\u{0}", ((int)ch).ToString("X4")));
 		}
 
 		private Socket _socket;

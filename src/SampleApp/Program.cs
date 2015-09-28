@@ -30,7 +30,7 @@ namespace log4net.Appenders.Contrib.SampleApp
 					"Error ocurred when attempting to print error message."
 				};
 
-				for (var i = 0; i < 3; i++)
+				for (var i = 0; i < logs.Count; i++)
 				{
 					var id = string.Format("{0}_{1}", i, Guid.NewGuid());
 					var message = logs[i] + " " + id;
