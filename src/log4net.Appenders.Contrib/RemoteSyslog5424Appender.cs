@@ -11,7 +11,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
-using ThreadState = System.Threading.ThreadState;
 
 using log4net.Appender;
 using log4net.Appenders.Contrib.Converters;
@@ -148,6 +147,21 @@ namespace log4net.Appenders.Contrib
 			Fields.Add(parts[0], value);
 		}
 
+		public override void ActivateOptions()
+		{
+			base.ActivateOptions();
+
+			try
+			{
+				Thread.MemoryBarrier();
+				_senderThread.Start();
+			}
+			catch (Exception exc)
+			{
+				ErrorHandler.Error(exc.ToString());
+			}
+		}
+
 		protected override void Append(LoggingEvent loggingEvent)
 		{
 			if (_disposed)
@@ -159,12 +173,6 @@ namespace log4net.Appenders.Contrib
 
 				lock (_messageQueue)
 				{
-					if ((_senderThread.ThreadState & ThreadState.Unstarted) != 0)
-					{
-						_senderThread.Start();
-						LogStartupInfo();
-					}
-
 					if (_messageQueue.Count == MaxQueueSize - 1)
 					{
 						var warningMessage = string.Format(
@@ -182,30 +190,38 @@ namespace log4net.Appenders.Contrib
 			}
 		}
 
-		private string FormatMessage(string sourceMessage, Level level, string structuredData = "")
+		private string FormatMessage(LoggingEvent val, Dictionary<string, string> extraFields = null)
 		{
+			var sourceMessage = RenderLoggingEvent(val);
+			var structuredData = FormatStructuredData(extraFields);
+
 			var time = Iso8601DatePatternConverter.FormatString(DateTime.UtcNow);
 			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
-				GeneratePriority(level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
+				GeneratePriority(val.Level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
 			var frame = string.Format("{0} {1}", message.Length, Escape(message));
 			if (TrailerChar != null)
 				frame += TrailerChar;
 			return frame;
 		}
 
-		private string FormatMessage(LoggingEvent val)
+		private string FormatStructuredData(Dictionary<string, string> extraFields = null)
 		{
-			var message = RenderLoggingEvent(val);
-
-			var structuredData = "";
+			var res = "";
 			if (Fields.Count > 0 && !string.IsNullOrEmpty(EnterpriseId))
-			{
-				var fieldsText = string.Join(" ",
-					Fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
-				structuredData = string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, fieldsText);
-			}
+				res = FormatStructuredFields(Fields);
 
-			return FormatMessage(message, val.Level, structuredData);
+			if (extraFields != null && extraFields.Count > 0)
+				res += " " + FormatStructuredFields(extraFields);
+
+			if (!string.IsNullOrEmpty(res))
+				return string.Format("[{0}@{1} {2}] ", StructuredDataId, EnterpriseId, res);
+
+			return res;
+		}
+
+		private static string FormatStructuredFields(Dictionary<string, string> fields)
+		{
+			return string.Join(" ", fields.Select(pair => string.Format("{0}=\"{1}\"", pair.Key, EscapeStructuredValue(pair.Value))));
 		}
 
 		private LoggingEvent CreateLoggingEvent(string message, Level level)
@@ -289,6 +305,16 @@ namespace log4net.Appenders.Contrib
 		{
 			try
 			{
+				while (!_disposed)
+				{
+					if (_log.IsErrorEnabled)
+					{
+						LogStartupInfo();
+						break;
+					}
+					Thread.Yield();
+				}
+
 				while (!_disposed)
 				{
 					TrySendMessages();
@@ -546,11 +572,13 @@ namespace log4net.Appenders.Contrib
 				lock (_messageQueue)
 				{
 					var loggingEvent = CreateLoggingEvent(message, level);
-					var renderedMessage = FormatMessage(loggingEvent);
+					var renderedMessage = FormatMessage(loggingEvent, _diagFields);
 					_messageQueue.Enqueue(renderedMessage);
 				}
 			}
 		}
+
+		private readonly Dictionary<string, string> _diagFields = new Dictionary<string, string> { { "category", "diagnostic" } };
 
 		public static void Flush(string appenderName, double maxTimeSecs = 10)
 		{
