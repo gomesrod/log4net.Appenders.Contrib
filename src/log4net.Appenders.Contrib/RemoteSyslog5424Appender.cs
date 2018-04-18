@@ -36,6 +36,8 @@ namespace log4net.Appenders.Contrib
 			Version = 1;
 			Facility = SyslogFacility.User;
 			TrailerChar = '\n';
+			Protocol = "TCP";
+			SSL = true;
 
 			_sendingPeriod = _defaultSendingPeriod;
 			Fields = new Dictionary<string, string>();
@@ -55,8 +57,20 @@ namespace log4net.Appenders.Contrib
 			CertificatePath = certificatePath;
 		}
 
+		public RemoteSyslog5424Appender(string server, int port, string protocol, bool ssl, string certificatePath)
+			: this()
+		{
+			Server = server;
+			Port = port;
+			Protocol = protocol;
+			SSL = ssl;
+			CertificatePath = certificatePath;
+		}
+
 		public string Server { get; set; }
 		public int Port { get; set; }
+		public string Protocol { get; set; }
+		public bool SSL { get; set; }
 		public string CertificatePath { get; set; }
 		public string Certificate { get; set; }
 
@@ -278,25 +292,66 @@ namespace log4net.Appenders.Contrib
 				if (_socket != null)
 					return;
 
-				var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-				socket.Connect(Server, Port);
+				var endpoint = ResolveServerEndpoint();
 
-				var rawStream = new NetworkStream(socket);
+				Socket socket;
+				if (IsTcp())
+				{
+					socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+					socket.Connect(endpoint);
 
-				_stream = new SslStream(rawStream, false, VerifyServerCertificate);
-				var certificate = (string.IsNullOrEmpty(CertificatePath))
-					? new X509Certificate(Encoding.ASCII.GetBytes(Certificate.Trim()))
-					: new X509Certificate(CertificatePath);
-				var certificates = new X509CertificateCollection(new[] { certificate });
-				_stream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
+					var rawStream = new NetworkStream(socket);
 
-				_writer = new StreamWriter(_stream, Encoding.UTF8);
+					if (SSL)
+					{
+						var sslStream = new SslStream(rawStream, false, VerifyServerCertificate);
+						var certificate = (string.IsNullOrEmpty(CertificatePath))
+							? new X509Certificate(Encoding.ASCII.GetBytes(Certificate.Trim()))
+							: new X509Certificate(CertificatePath);
+						var certificates = new X509CertificateCollection(new[] { certificate });
+						sslStream.AuthenticateAsClient(Server, certificates, SslProtocols.Tls, false);
+
+						_stream = sslStream;
+					}
+					else
+					{
+						_stream = rawStream;
+					}
+
+					_writer = new StreamWriter(_stream, Encoding.UTF8);
+
+				} else
+				{
+					socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+					_writer = null;
+				}
 
 				_socket = socket;
+				_remoteEndpoint = endpoint;
 			}
 		}
 
-		private static bool VerifyServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+		private bool IsTcp()
+		{
+			return Protocol != null && Protocol.ToUpper() == "TCP";
+		}
+
+		private IPEndPoint ResolveServerEndpoint()
+		{
+			var addresses = System.Net.Dns.GetHostAddresses(Server);
+			if (addresses.Length == 0)
+			{
+				throw new ArgumentException(
+					"Unable to retrieve address from specified host name.",
+					"hostName"
+				);
+			}
+
+			var endpoint = new IPEndPoint(addresses[0], Port);
+			return endpoint;
+		}
+
+        private static bool VerifyServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
 		{
 			return true;
 		}
@@ -367,9 +422,9 @@ namespace log4net.Appenders.Contrib
 					EnsureConnected();
 
 					TextWriter writer;
-					lock (_connectionSync)
+                    lock (_connectionSync)
 					{
-						if (_socket == null || _writer == null)
+						if (_socket == null)
 							return;
 						socket = _socket;
 						writer = _writer;
@@ -388,8 +443,15 @@ namespace log4net.Appenders.Contrib
 							frame = _messageQueue.Peek();
 						}
 
-						writer.Write(frame);
-						writer.Flush();
+						if (IsTcp())
+						{
+							writer.Write(frame);
+							writer.Flush();
+						} else
+						{
+							byte[] sendBuffer = Encoding.UTF8.GetBytes(frame);
+							socket.SendTo(sendBuffer, _remoteEndpoint);
+						}
 
 						lock (_messageQueue)
 						{
@@ -609,7 +671,8 @@ namespace log4net.Appenders.Contrib
 		}
 
 		private Socket _socket;
-		private SslStream _stream;
+		private EndPoint _remoteEndpoint;
+		private Stream _stream;
 		private TextWriter _writer;
 
 		private volatile bool _disposed;
