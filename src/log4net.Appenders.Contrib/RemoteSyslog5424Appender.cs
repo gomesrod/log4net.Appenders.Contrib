@@ -36,6 +36,7 @@ namespace log4net.Appenders.Contrib
 			Version = 1;
 			Facility = SyslogFacility.User;
 			TrailerChar = '\n';
+			PrependMessageSize = true;
 			Protocol = "TCP";
 			SSL = true;
 
@@ -80,6 +81,7 @@ namespace log4net.Appenders.Contrib
 		public int Version { get; private set; }
 
 		public char? TrailerChar { get; set; }
+		public bool PrependMessageSize { get; set; }
 
 		public int TrailerCharCode
 		{
@@ -212,7 +214,13 @@ namespace log4net.Appenders.Contrib
 			var time = Iso8601DatePatternConverter.FormatString(DateTime.UtcNow);
 			var message = string.Format("<{0}>{1} {2} {3} {4} {5} {6} {7}{8}",
 				GeneratePriority(val.Level), Version, time, Hostname, AppName, ProcId, MessageId, structuredData, sourceMessage);
-			var frame = string.Format("{0} {1}", message.Length, Escape(message));
+
+			String frame;
+			if (PrependMessageSize)
+				frame = string.Format("{0} {1}", message.Length, Escape(message));
+			else
+				frame = message;
+
 			if (TrailerChar != null)
 				frame += TrailerChar;
 			return frame;
